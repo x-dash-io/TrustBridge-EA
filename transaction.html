@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction #TRX-8291 — TrustBridge Escrow</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.004 95);
+      --surface: oklch(100% 0.002 95);
+      --fg:      oklch(20% 0.018 70);
+      --muted:   oklch(48% 0.012 70);
+      --border:  oklch(90% 0.006 95);
+      --accent:  oklch(52% 0.10 28);
+      --success: oklch(62% 0.17 145);
+      --warning: oklch(75% 0.15 70);
+      --danger:  oklch(55% 0.22 25);
+
+      --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono:    ui-monospace, 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    nav {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      margin-bottom: 48px;
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--fg);
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    h1 { font-family: var(--font-display); font-size: 32px; margin-bottom: 12px; }
+
+    /* Timeline */
+    .timeline {
+      display: flex;
+      justify-content: space-between;
+      margin: 64px 0;
+      position: relative;
+    }
+
+    .timeline::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border);
+      z-index: 0;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+      width: 25%;
+      text-align: center;
+    }
+
+    .dot {
+      width: 28px;
+      height: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .step.active .dot { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+    .step.completed .dot { border-color: var(--success); background: var(--success); color: var(--bg); }
+    .step.completed .dot::after { content: '✓'; font-size: 14px; }
+
+    .step-label { font-size: 12px; font-weight: 600; text-transform: uppercase; font-family: var(--font-mono); color: var(--muted); }
+    .step.active .step-label { color: var(--fg); }
+
+    /* Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 64px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 32px;
+      margin-bottom: 32px;
+    }
+
+    .panel h3 { font-family: var(--font-display); font-size: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+
+    /* Details */
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .data-label { color: var(--muted); }
+    .data-value { font-weight: 600; }
+    .amount { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+
+    /* Actions */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--fg);
+      background: var(--fg);
+      color: var(--bg);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .btn-secondary { background: none; color: var(--fg); }
+    .btn-danger { border-color: var(--danger); color: var(--danger); background: none; }
+    .btn:hover { opacity: 0.9; }
+
+    /* Messages */
+    .message { margin-bottom: 24px; }
+    .msg-meta { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .msg-body { background: var(--bg); padding: 16px; border: 1px solid var(--border); font-size: 14px; }
+
+    /* Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--success);
+      color: var(--bg);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      .timeline { overflow-x: auto; justify-content: flex-start; gap: 40px; }
+      .step { min-width: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-content">
+    <a href="dashboard.html" class="logo">TrustBridge</a>
+    <div style="font-size: 14px; color: var(--muted);">
+       Signed in as arthur@trbridge.com
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <span class="kicker">Transaction Overview</span>
+  <div class="status-badge">Funds Secured</div>
+  <h1>Legal Consulting Services</h1>
+  <p style="color: var(--muted); font-size: 18px;">Counterparty: Seward & Co. (Seller)</p>
+
+  <div class="timeline">
+    <div class="step completed">
+      <div class="dot"></div>
+      <div class="step-label">Agreed</div>
+    </div>
+    <div class="step completed">
+      <div class="dot"></div>
+      <div class="step-label">Funded</div>
+    </div>
+    <div class="step active">
+      <div class="dot">03</div>
+      <div class="step-label">Delivery</div>
+    </div>
+    <div class="step">
+      <div class="dot">04</div>
+      <div class="step-label">Released</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="main-col">
+      <div class="panel">
+        <h3>Transaction Details</h3>
+        <div class="data-row">
+          <span class="data-label">Asset/Service</span>
+          <span class="data-value">B2B Retainer: Q3 Compliance Audit</span>
+        </div>
+        <div class="data-row">
+          <span class="data-label">Amount in Escrow</span>
+          <span class="data-value amount">$24,000.00</span>
+        </div>
+        <div class="data-row">
+          <span class="data-label">Inspection Period</span>
+          <span class="data-value">05 Business Days</span>
+        </div>
+        <div class="data-row">
+          <span class="data-label">Expected Completion</span>
+          <span class="data-value">August 15, 2026</span>
+        </div>
+        <div class="data-row" style="border-bottom: none; margin-top: 12px;">
+          <span class="data-label">Audit Log</span>
+          <span class="data-value" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent);">VIEW IMMUTABLE TRAIL</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Release Conditions</h3>
+        <ul style="list-style: none; font-size: 14px;">
+          <li style="margin-bottom: 16px; display: flex; gap: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <div>
+              <strong>Funds Deposited</strong>
+              <p style="color: var(--muted); font-size: 12px;">Verified by TrustBridge Bank (TXN-9128)</p>
+            </div>
+          </li>
+          <li style="margin-bottom: 16px; display: flex; gap: 12px;">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            <div>
+              <strong>Service Delivery Confirmation</strong>
+              <p style="color: var(--muted); font-size: 12px;">Seller must upload final compliance report.</p>
+            </div>
+          </li>
+          <li style="margin-bottom: 16px; display: flex; gap: 12px;">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            <div>
+              <strong>Buyer Approval</strong>
+              <p style="color: var(--muted); font-size: 12px;">Arthur V. must approve the deliverables or inspection period expires.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3>Secure Communication</h3>
+        <div class="message">
+          <div class="msg-meta">Seward & Co. • 2 Hours Ago</div>
+          <div class="msg-body">We have uploaded the initial draft of the compliance audit. Please review at your earliest convenience.</div>
+        </div>
+        <div class="message">
+          <div class="msg-meta">TrustBridge System • 4 Hours Ago</div>
+          <div class="msg-body">Funds ($24,000.00) successfully secured in escrow. Seller has been notified to proceed.</div>
+        </div>
+        <div style="margin-top: 32px;">
+          <textarea placeholder="Write a secure message..." style="width: 100%; height: 80px; padding: 12px; border: 1px solid var(--border); font-family: var(--font-body); margin-bottom: 12px;"></textarea>
+          <button class="btn" style="width: auto; padding: 10px 24px;">Send Message</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="panel">
+        <h3>Actions</h3>
+        <a href="#" class="btn" style="opacity: 0.5; cursor: not-allowed;">Release Funds</a>
+        <p style="font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 24px;">Release becomes available after delivery confirmation.</p>
+        <a href="dispute.html?id=8291" class="btn btn-danger">Initiate Dispute</a>
+        <a href="#" class="btn btn-secondary">Request Cancellation</a>
+      </div>
+
+      <div class="panel" style="background: var(--bg);">
+        <span class="kicker">Trust & Compliance</span>
+        <div style="font-size: 13px; margin-top: 12px;">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            GDPR Protected Session
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            PCI Level 1 Vaulted
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            SOCI 2 Audit trail active
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustBridge Escrow — Project Overview</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.004 95);
+      --surface: oklch(100% 0.002 95);
+      --fg:      oklch(20% 0.018 70);
+      --muted:   oklch(48% 0.012 70);
+      --border:  oklch(90% 0.006 95);
+      --accent:  oklch(52% 0.10 28);
+      
+      --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono:    ui-monospace, 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.5; padding: 80px 0; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+    
+    header { border-bottom: 1px solid var(--fg); padding-bottom: 48px; margin-bottom: 80px; }
+    h1 { font-family: var(--font-display); font-size: 64px; line-height: 1; margin-bottom: 24px; letter-spacing: -0.02em; }
+    
+    .kicker { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 16px; display: block; }
+
+    .intro { font-size: 20px; color: var(--muted); max-width: 800px; line-height: 1.6; }
+
+    /* Screen Gallery */
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 40px; margin-bottom: 120px; }
+    
+    .screen-card { 
+      text-decoration: none; color: var(--fg); display: block; border: 1px solid var(--border); background: var(--surface); 
+      transition: border-color 0.2s;
+    }
+    .screen-card:hover { border-color: var(--fg); }
+    
+    .screen-preview { 
+      aspect-ratio: 16/10; background: var(--bg); border-bottom: 1px solid var(--border); overflow: hidden; 
+      display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .screen-preview::after { content: 'View Screen'; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; opacity: 0; transition: opacity 0.2s; }
+    .screen-card:hover .screen-preview::after { opacity: 1; }
+
+    .screen-info { padding: 24px; }
+    .screen-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .screen-desc { font-size: 14px; color: var(--muted); }
+
+    /* Spec Section */
+    .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; border-top: 1px solid var(--border); padding-top: 80px; }
+    .spec-col h2 { font-family: var(--font-display); font-size: 32px; margin-bottom: 32px; }
+    .spec-item { margin-bottom: 32px; }
+    .spec-label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
+    .spec-value { font-size: 16px; }
+
+    .palette { display: flex; gap: 8px; margin-top: 12px; }
+    .color-chip { width: 32px; height: 32px; border: 1px solid var(--border); }
+
+    @media (max-width: 800px) {
+      .spec-grid { grid-template-columns: 1fr; gap: 40px; }
+      h1 { font-size: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <span class="kicker">Project Case Study</span>
+    <h1>TrustBridge Escrow</h1>
+    <p class="intro">A high-fidelity infrastructure design for a modern, secure, and compliant escrow system. Built with an editorial-luxury visual language to convey stability, trust, and legal precision.</p>
+  </header>
+
+  <div class="gallery">
+    <a href="landing.html" class="screen-card">
+      <div class="screen-preview" style="background: linear-gradient(to bottom, var(--surface), var(--bg));"></div>
+      <div class="screen-info">
+        <div class="screen-title">01 Landing Page</div>
+        <div class="screen-desc">Responsive marketing surface with trust signals, process overview, and compliance badges.</div>
+      </div>
+    </a>
+
+    <a href="dashboard.html" class="screen-card">
+      <div class="screen-preview" style="background: linear-gradient(135deg, var(--bg), var(--surface));"></div>
+      <div class="screen-info">
+        <div class="screen-title">02 User Dashboard</div>
+        <div class="screen-desc">Central hub for tracking active transactions, dispute status, and account compliance.</div>
+      </div>
+    </a>
+
+    <a href="transaction.html" class="screen-card">
+      <div class="screen-preview" style="background: linear-gradient(45deg, var(--surface), var(--bg));"></div>
+      <div class="screen-info">
+        <div class="screen-title">03 Transaction Detail</div>
+        <div class="screen-desc">High-trust view with status timeline, verification conditions, and secure messaging.</div>
+      </div>
+    </a>
+
+    <a href="payment.html" class="screen-card">
+      <div class="screen-preview" style="background: linear-gradient(to right, var(--bg), var(--surface));"></div>
+      <div class="screen-info">
+        <div class="screen-title">04 Payment Flow</div>
+        <div class="screen-desc">Secure escrow funding interface with PCI/GDPR compliance markers.</div>
+      </div>
+    </a>
+
+    <a href="kyc.html" class="screen-card">
+      <div class="screen-preview" style="background: linear-gradient(to top, var(--bg), var(--surface));"></div>
+      <div class="screen-info">
+        <div class="screen-title">05 Identity Verification</div>
+        <div class="screen-desc">Multi-tier KYC process for high-value transaction authorization.</div>
+      </div>
+    </a>
+
+    <a href="dispute.html" class="screen-card">
+      <div class="screen-preview" style="background: linear-gradient(to bottom right, var(--bg), var(--surface));"></div>
+      <div class="screen-info">
+        <div class="screen-title">06 Dispute Resolution</div>
+        <div class="screen-desc">Structured mediation workspace for evidence submission and case resolution.</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="spec-grid">
+    <div class="spec-col">
+      <h2>Visual System</h2>
+      <div class="spec-item">
+        <span class="spec-label">Visual Direction</span>
+        <div class="spec-value">Editorial Monocle (Luxury / Refined)</div>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Palette</span>
+        <div class="palette">
+          <div class="color-chip" style="background: oklch(98% 0.004 95);"></div>
+          <div class="color-chip" style="background: oklch(100% 0.002 95);"></div>
+          <div class="color-chip" style="background: oklch(20% 0.018 70);"></div>
+          <div class="color-chip" style="background: oklch(48% 0.012 70);"></div>
+          <div class="color-chip" style="background: oklch(90% 0.006 95);"></div>
+          <div class="color-chip" style="background: oklch(52% 0.10 28);"></div>
+        </div>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Typography</span>
+        <div class="spec-value">
+          Display: Iowan Old Style (Serif)<br>
+          Body: SF Pro / System Sans<br>
+          Metadata: IBM Plex Mono
+        </div>
+      </div>
+    </div>
+    
+    <div class="spec-col">
+      <h2>Core Principles</h2>
+      <div class="spec-item">
+        <span class="spec-label">Trust Invariant</span>
+        <div class="spec-value">Every screen prominently displays compliance (GDPR, PCI) and security (Audit Trail) signals.</div>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Architectural Posture</span>
+        <div class="spec-value">Zero border-radius, hairline borders, and generous whitespace to create a "bank-native" feel.</div>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Tone of Voice</span>
+        <div class="spec-value">Professional, direct, and authoritative. Minimalist UX that stays out of the way of the data.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer style="margin-top: 120px; padding-top: 40px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); font-family: var(--font-mono);">
+    TRUSTBRIDGE SYSTEMS PROJECT • VERSION 1.0.0 • 2026
+  </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — TrustBridge Escrow</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.004 95);
+      --surface: oklch(100% 0.002 95);
+      --fg:      oklch(20% 0.018 70);
+      --muted:   oklch(48% 0.012 70);
+      --border:  oklch(90% 0.006 95);
+      --accent:  oklch(52% 0.10 28);
+      --success: oklch(62% 0.17 145);
+      --warning: oklch(75% 0.15 70);
+      --danger:  oklch(55% 0.22 25);
+
+      --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono:    ui-monospace, 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    aside {
+      width: 260px;
+      border-right: 1px solid var(--border);
+      padding: 32px;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--fg);
+      margin-bottom: 48px;
+    }
+
+    nav ul { list-style: none; }
+    nav li { margin-bottom: 8px; }
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 0;
+      display: block;
+      transition: color 0.2s;
+    }
+    nav a:hover, nav a.active { color: var(--fg); }
+    nav a.active { font-weight: 700; border-left: 2px solid var(--accent); padding-left: 12px; margin-left: -14px; }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      padding: 48px;
+      overflow-y: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 48px;
+    }
+
+    h1 { font-family: var(--font-display); font-size: 32px; }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .stat-card {
+      padding: 24px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* Tables */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--fg);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover td { background: var(--surface); }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-pending::before { background: var(--warning); }
+    .status-active::before { background: var(--success); }
+    .status-disputed::before { background: var(--danger); }
+    .status-completed::before { background: var(--muted); }
+
+    .amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: 1px solid var(--fg);
+      background: none;
+      color: var(--fg);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .btn-sm:hover { background: var(--fg); color: var(--bg); }
+
+    /* Alerts / Compliance */
+    .compliance-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .compliance-info h4 { font-family: var(--font-display); margin-bottom: 4px; }
+    .compliance-info p { font-size: 14px; color: var(--muted); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      body { flex-direction: column; }
+      aside { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .stats-grid { grid-template-columns: 1fr; }
+      main { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<aside>
+  <a href="index.html" class="logo">TrustBridge</a>
+  <nav>
+    <ul>
+      <li><a href="dashboard.html" class="active">Overview</a></li>
+      <li><a href="#">Transactions</a></li>
+      <li><a href="dispute.html">Disputes</a></li>
+      <li><a href="kyc.html">Identity & KYC</a></li>
+      <li><a href="settings.html">Settings</a></li>
+    </ul>
+  </nav>
+  <div style="margin-top: auto;">
+    <span class="kicker">Support</span>
+    <nav>
+      <ul>
+        <li><a href="#">Help Center</a></li>
+        <li><a href="#">Contact Support</a></li>
+      </ul>
+    </nav>
+  </div>
+</aside>
+
+<main>
+  <header>
+    <div>
+      <span class="kicker">Welcome back, Arthur</span>
+      <h1>Dashboard</h1>
+    </div>
+    <div style="display: flex; gap: 12px;">
+      <a href="payment.html" class="btn-sm" style="padding: 10px 20px;">+ New Transaction</a>
+    </div>
+  </header>
+
+  <div class="compliance-banner">
+    <div class="compliance-info">
+      <h4>Account Verification Required</h4>
+      <p>To release funds over $5,000, please complete your Tier 2 KYC verification.</p>
+    </div>
+    <a href="kyc.html" class="btn-sm">Verify Identity</a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">$142,500.00</div>
+      <div class="stat-label">Total in Escrow</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">04</div>
+      <div class="stat-label">Active Transactions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">01</div>
+      <div class="stat-label">Pending Disputes</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <span class="kicker" style="margin-bottom: 0;">Active Transactions</span>
+    <a href="#" style="font-size: 12px; color: var(--muted); text-decoration: none;">View All</a>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Counterparty</th>
+        <th>Asset/Service</th>
+        <th>Status</th>
+        <th>Amount</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-family: var(--font-mono); font-size: 12px;">#TRX-8291</td>
+        <td><strong>Seward & Co.</strong></td>
+        <td>Legal Consulting Services</td>
+        <td><span class="status status-active">Funds Secured</span></td>
+        <td class="amount">$24,000.00</td>
+        <td><a href="transaction.html?id=8291" class="btn-sm">Details</a></td>
+      </tr>
+      <tr>
+        <td style="font-family: var(--font-mono); font-size: 12px;">#TRX-7442</td>
+        <td><strong>Elena Rodriguez</strong></td>
+        <td>Antique Watch (Patek 5711)</td>
+        <td><span class="status status-pending">Awaiting Funds</span></td>
+        <td class="amount">$85,000.00</td>
+        <td><a href="transaction.html?id=7442" class="btn-sm">Details</a></td>
+      </tr>
+      <tr>
+        <td style="font-family: var(--font-mono); font-size: 12px;">#TRX-9104</td>
+        <td><strong>MetaScale Inc.</strong></td>
+        <td>Domain Acquisition: scale.ai</td>
+        <td><span class="status status-disputed">In Dispute</span></td>
+        <td class="amount">$250,000.00</td>
+        <td><a href="transaction.html?id=9104" class="btn-sm">Details</a></td>
+      </tr>
+      <tr>
+        <td style="font-family: var(--font-mono); font-size: 12px;">#TRX-6610</td>
+        <td><strong>Julian Vane</strong></td>
+        <td>Rare Book Collection (1st Ed)</td>
+        <td><span class="status status-active">In Inspection</span></td>
+        <td class="amount">$33,500.00</td>
+        <td><a href="transaction.html?id=6610" class="btn-sm">Details</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-header" style="margin-top: 64px;">
+    <span class="kicker" style="margin-bottom: 0;">Compliance Indicators</span>
+  </div>
+  
+  <div style="display: flex; gap: 48px; padding: 24px; border: 1px solid var(--border); background: var(--surface);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+       <span style="font-size: 13px; font-weight: 600;">GDPR: Data Encrypted</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+       <span style="font-size: 13px; font-weight: 600;">PCI: Level 1 Secure</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+       <span style="font-size: 13px; font-weight: 600;">Audit Trail: Active</span>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>

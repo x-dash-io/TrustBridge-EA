@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustBridge Escrow — Secure Every Exchange</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.004 95);
+      --surface: oklch(100% 0.002 95);
+      --fg:      oklch(20% 0.018 70);
+      --muted:   oklch(48% 0.012 70);
+      --border:  oklch(90% 0.006 95);
+      --accent:  oklch(52% 0.10 28);
+
+      --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono:    ui-monospace, 'IBM Plex Mono', 'JetBrains Mono', monospace;
+
+      --spacing-base: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 1.1;
+      text-wrap: balance;
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 0;
+      background: var(--surface);
+    }
+
+    nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      text-decoration: none;
+      color: var(--fg);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--fg);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border: 1px solid var(--fg);
+      background: none;
+      color: var(--fg);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .btn-primary {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 120px 0 80px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero h1 {
+      font-size: clamp(48px, 8vw, 84px);
+      margin-bottom: 32px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      max-width: 600px;
+      margin: 0 auto 40px;
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    /* Sections */
+    section {
+      padding: 100px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 48px;
+    }
+
+    .feature-card {
+      padding: 32px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .feature-card h3 {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .feature-card p {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    /* Compliance & Badges */
+    .compliance-bar {
+      display: flex;
+      justify-content: center;
+      gap: 64px;
+      padding: 40px 0;
+      filter: grayscale(1);
+      opacity: 0.6;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .badge svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* How it works */
+    .steps {
+      counter-reset: step;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 64px;
+      align-items: flex-start;
+    }
+
+    .step-item::before {
+      counter-increment: step;
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+      padding-top: 4px;
+    }
+
+    .step-content h3 {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    /* Footer */
+    footer {
+      padding: 80px 0;
+      background: var(--surface);
+      font-size: 14px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+    }
+
+    .footer-col h4 {
+      margin-bottom: 24px;
+      font-size: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+    }
+
+    .footer-col ul li {
+      margin-bottom: 12px;
+    }
+
+    .footer-col a {
+      text-decoration: none;
+      color: var(--muted);
+    }
+
+    .footer-col a:hover {
+      color: var(--fg);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero { padding: 80px 0; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+      .compliance-bar { flex-wrap: wrap; gap: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html" class="logo">TrustBridge</a>
+    <div class="nav-links">
+      <a href="#how">Process</a>
+      <a href="#security">Security</a>
+      <a href="#pricing">Pricing</a>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+    <a href="payment.html" class="btn btn-primary">Start Transaction</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <span class="kicker">Founded on Trust</span>
+    <h1>The Infrastructure of Secure Exchange.</h1>
+    <p>A modern escrow system for high-value transactions, digital assets, and professional services. Regulated, audited, and encrypted.</p>
+    <div style="display: flex; justify-content: center; gap: 16px;">
+      <a href="dashboard.html" class="btn btn-primary">Launch Dashboard</a>
+      <a href="#how" class="btn">View our Process</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="compliance-bar">
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      GDPR COMPLIANT
+    </div>
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      PCI-DSS CERTIFIED
+    </div>
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      SOCI 2 TYPE II
+    </div>
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      FCA REGULATED
+    </div>
+  </div>
+</div>
+
+<section id="how">
+  <div class="container">
+    <div class="grid" style="grid-template-columns: 1fr 1fr; align-items: center;">
+      <div>
+        <span class="kicker">Our Process</span>
+        <h2>How TrustBridge Secures Your Transaction</h2>
+        <p style="margin-top: 24px; color: var(--muted);">We eliminate the counterparty risk in online exchanges by acting as a neutral third party that holds funds until all conditions are met.</p>
+      </div>
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-content">
+            <h3>Terms are Agreed</h3>
+            <p>Buyer and Seller agree to terms including inspection period and milestones.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-content">
+            <h3>Buyer Funds Escrow</h3>
+            <p>Funds are held in a secure, audited account. Seller is notified to proceed.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-content">
+            <h3>Service or Goods Delivered</h3>
+            <p>Seller provides the agreed-upon value. Buyer initiates the inspection period.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-content">
+            <h3>Funds Released</h3>
+            <p>Upon verification or completion of terms, funds are released to the seller.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="security">
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 80px;">
+      <span class="kicker">Military-Grade Security</span>
+      <h2>Built for the Most Demanding Standards</h2>
+    </div>
+    <div class="grid">
+      <div class="feature-card">
+        <h3>2FA & Biometrics</h3>
+        <p>Every critical action—from funding to release—requires multi-factor authentication.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Encrypted Vaults</h3>
+        <p>Your financial details and personal identification are encrypted at rest with AES-256.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Immutable Audit</h3>
+        <p>Every transaction, message, and state change is logged in a permanent, tamper-proof trail.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <a href="#" class="logo" style="margin-bottom: 24px; display: block;">TrustBridge</a>
+        <p style="margin-bottom: 24px;">The world's most trusted escrow infrastructure for the digital economy.</p>
+        <p>&copy; 2026 TrustBridge Systems Inc.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="kyc.html">Verification</a></li>
+          <li><a href="dispute.html">Resolution</a></li>
+          <li><a href="#">API Docs</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Legal</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Compliance</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Status</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
