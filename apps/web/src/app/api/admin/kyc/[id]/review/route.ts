@@ -18,7 +18,7 @@ export async function POST(
 ) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "kyc:approve", "kyc:reject");
+    requirePermission(user, "kyc:approve", "kyc:reject");
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { id } = await params;
 

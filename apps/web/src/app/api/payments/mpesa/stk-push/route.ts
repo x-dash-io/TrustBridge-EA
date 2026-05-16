@@ -1,18 +1,35 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { initiateSTKPush } from "@/lib/mpesa/stk-push";
 import { createPayment } from "@/lib/db/queries/payments";
-import { getTransactionById } from "@/lib/db/queries/transactions";
+import { getTransactionById, getTransactionParties } from "@/lib/db/queries/transactions";
 import { logAuditEvent } from "@/lib/db/queries/audit";
 
 const stkPushSchema = z.object({
   transactionId: z.string().uuid(),
   milestoneId: z.string().uuid().optional(),
-  phoneNumber: z.string().regex(/^(\+?254)\d{9}$/, "Phone must be in E.164 format (e.g. +254712345678)"),
-  amount: z.number().positive().max(300000, "Amount exceeds M-Pesa limit of KSh 300,000"),
+  phoneNumber: z
+    .string()
+    .regex(/^(\+?254)\d{9}$/, "Phone must be in E.164 format (e.g. +254712345678)"),
+  amount: z
+    .number()
+    .positive()
+    .max(300000, "Amount exceeds M-Pesa limit of KSh 300,000"),
 });
 
 export async function POST(request: NextRequest) {
+  // 1. Authenticate caller
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const parsed = stkPushSchema.safeParse(body);
@@ -26,23 +43,47 @@ export async function POST(request: NextRequest) {
 
     const { transactionId, milestoneId, phoneNumber, amount } = parsed.data;
 
+    // 2. Load transaction
     const transaction = await getTransactionById(transactionId);
-
     if (!transaction) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
+    // 3. FIX BUG-05: Verify the authenticated user is the buyer on this transaction.
+    //    Previously the route accepted any authenticated user and attributed the payment
+    //    to transaction.createdBy — allowing User A to trigger an STK push on User B's
+    //    transaction, or fabricate a payment on a transaction they don't own.
+    const parties = await getTransactionParties(transactionId);
+    const buyerParty = parties.find(
+      (p) => p.role === "buyer" && p.userId === user.id
+    );
+
+    if (!buyerParty) {
+      await logAuditEvent({
+        transactionId,
+        actorId: user.id,
+        actorRole: "unknown",
+        action: "STK_PUSH_UNAUTHORIZED_ATTEMPT",
+        metadata: { transactionId, userId: user.id },
+        ipAddress: request.headers.get("x-forwarded-for") ?? undefined,
+      });
+      return NextResponse.json(
+        { error: "Only the buyer on this transaction can initiate payment" },
+        { status: 403 }
+      );
+    }
+
+    // 4. State guard
     if (transaction.status !== "draft" && transaction.status !== "pending_funds") {
       return NextResponse.json(
-        { error: `Transaction is in status "${transaction.status}", cannot accept payment` },
+        {
+          error: `Transaction is in status "${transaction.status}", cannot accept payment`,
+        },
         { status: 409 }
       );
     }
 
     const ref = transaction.reference;
-    const callbackUrl =
-      process.env.MPESA_STK_CALLBACK_URL ||
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/webhooks/mpesa/stk`;
 
     const darajaRes = await initiateSTKPush({
       phone: phoneNumber,
@@ -60,7 +101,7 @@ export async function POST(request: NextRequest) {
     const payment = await createPayment({
       transactionId,
       milestoneId: milestoneId || null,
-      payerId: transaction.createdBy,
+      payerId: user.id, // Now correctly the authenticated caller, not transaction.createdBy
       amount: amount.toString(),
       currency: transaction.currency,
       method: "mpesa_stk",
@@ -71,24 +112,26 @@ export async function POST(request: NextRequest) {
 
     await logAuditEvent({
       transactionId,
-      actorId: transaction.createdBy,
+      actorId: user.id,
       actorRole: "buyer",
-      action: "mpesa_stk_initiated",
+      action: "MPESA_STK_INITIATED",
       metadata: {
         checkoutRequestId: darajaRes.CheckoutRequestID,
         amount,
-        phone: phoneNumber.slice(0, -4) + "****",
+        phoneMasked: `${phoneNumber.slice(0, 5)}****${phoneNumber.slice(-4)}`,
       },
+      ipAddress: request.headers.get("x-forwarded-for") ?? undefined,
     });
 
     return NextResponse.json({
       checkoutRequestId: darajaRes.CheckoutRequestID,
       merchantRequestId: darajaRes.MerchantRequestID,
-      message: `STK push sent to ${phoneNumber.slice(0, 3)}****${phoneNumber.slice(-4)}`,
+      message: `STK push sent to ${phoneNumber.slice(0, 5)}****${phoneNumber.slice(-4)}`,
       paymentId: payment.id,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Internal server error";
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

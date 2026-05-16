@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { requirePermission } from "@/lib/auth/authorize";
+import { requirePermission, requireRole } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { roles } from "@/lib/db/schema";
 import { sql, eq } from "drizzle-orm";
@@ -15,7 +15,7 @@ const createRoleSchema = z.object({
 export async function GET(_request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*");
+    requireRole(user, "super_admin");
 
     const rows = await db
       .select()
@@ -35,7 +35,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*");
+    requireRole(user, "super_admin");
 
     const body = await request.json();
     const parsed = createRoleSchema.safeParse(body);

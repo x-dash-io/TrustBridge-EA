@@ -5,25 +5,24 @@ import { eq, and } from "drizzle-orm";
 import { type AuthUser } from "./authorize";
 import { type RoleName } from "./roles";
 
-let _currentUser: AuthUser | null = null;
-
-export function setCurrentUser(user: AuthUser | null) {
-  _currentUser = user;
-}
-
-export function getCachedCurrentUser(): AuthUser | null {
-  return _currentUser;
-}
-
+/**
+ * FIX BUG-01: The previous implementation used a module-level singleton
+ * (`let _currentUser`) which is shared across all concurrent requests in
+ * Next.js serverless/edge environments. This causes User A's identity to
+ * bleed into User B's request — a critical authentication vulnerability.
+ *
+ * The fix: remove all module-level state. Every call fetches fresh from
+ * Supabase's cryptographically-verified session cookie. The Supabase client
+ * itself handles token caching safely per-request via the cookie store.
+ */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  if (_currentUser) return _currentUser;
-
   const supabase = await createClient();
   const {
     data: { user: authUser },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!authUser) return null;
+  if (error || !authUser) return null;
 
   const dbUser = await db
     .select()
@@ -34,7 +33,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   if (!dbUser) return null;
 
-  // Fallback: if user has no roles in user_roles, assign "user" role
   const userRoleRows = await db
     .select({
       roleId: userRoles.roleId,
@@ -46,7 +44,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     .where(and(eq(userRoles.userId, dbUser.id)))
     .then((r) => r);
 
-  // If no roles assigned, create a default "user" role assignment
+  // If no roles assigned, assign the default "user" role
   let resolvedRoles = userRoleRows;
   if (resolvedRoles.length === 0) {
     const defaultRole = await db
@@ -76,7 +74,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     new Set(resolvedRoles.flatMap((r) => r.permissions || []))
   );
 
-  const user: AuthUser = {
+  return {
     id: dbUser.id,
     email: dbUser.email || "",
     roles: resolvedRoles.map((r) => ({
@@ -86,7 +84,4 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     })),
     allPermissions,
   };
-
-  _currentUser = user;
-  return user;
 }

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { requirePermission } from "@/lib/auth/authorize";
+import { requirePermission, requireRole } from "@/lib/auth/authorize";
 import { db } from "@/lib/db";
 import { roles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -18,7 +18,7 @@ export async function PATCH(
 ) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*");
+    requireRole(user, "super_admin");
     const { id } = await params;
 
     const body = await request.json();
@@ -48,7 +48,7 @@ export async function DELETE(
 ) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*");
+    requireRole(user, "super_admin");
     const { id } = await params;
 
     const role = await db

@@ -8,7 +8,7 @@ import { sql, eq } from "drizzle-orm";
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "disputes:assign");
+    requirePermission(user, "disputes:assign");
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, Number(searchParams.get("page")) || 1);

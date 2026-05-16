@@ -17,7 +17,7 @@ export async function POST(
 ) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "disputes:assign");
+    requirePermission(user, "disputes:assign");
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { id } = await params;
 

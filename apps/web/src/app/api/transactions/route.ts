@@ -4,6 +4,7 @@ import { getTransactionsByUserId, createTransaction, addTransactionParty } from 
 import { createMilestone } from "@/lib/db/queries/milestones";
 import { logAuditEvent } from "@/lib/db/queries/audit";
 import { generateReference } from "@/lib/utils/reference";
+import { calcFee, calcFeeRate } from "@/lib/utils/currency";
 import { z } from "zod";
 
 const createTransactionSchema = z.object({
@@ -122,6 +123,12 @@ export async function POST(request: NextRequest) {
       (sum, m) => sum + Number(m.amount), 0
     );
 
+    // FIX BUG-10: compute fees server-side — never trust client-supplied fee values.
+    // calcFeeRate returns a percentage (e.g. 2.0 for 2%), calcFee returns the KES amount.
+    const transactionAmount = Number(data.amount);
+    const feeRate = calcFeeRate(transactionAmount);
+    const feeAmount = calcFee(transactionAmount);
+
     // Create transaction
     const tx = await createTransaction({
       reference,
@@ -137,8 +144,8 @@ export async function POST(request: NextRequest) {
       hasDataRoom: data.includeDataRoom,
       status: "pending_funds",
       createdBy: user.id,
-      feeAmount: null,
-      feePercentage: null,
+      feeAmount: feeAmount.toFixed(2),
+      feePercentage: feeRate.toFixed(4),
       fxRateAtCreation: null,
       fxBaseCurrency: "KES",
     });

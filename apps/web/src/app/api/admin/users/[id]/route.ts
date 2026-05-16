@@ -20,7 +20,7 @@ export async function GET(
 ) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "users:view");
+    requirePermission(user, "users:view");
     const { id } = await params;
 
     const dbUser = await db
@@ -63,7 +63,7 @@ export async function PATCH(
 ) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "users:view");
+    requirePermission(user, "users:view");
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { id } = await params;
 

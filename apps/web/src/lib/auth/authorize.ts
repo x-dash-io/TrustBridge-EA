@@ -20,6 +20,17 @@ export class AuthorizationError extends Error {
   }
 }
 
+/**
+ * FIX BUG-02: The previous implementation called requirePermission(user, "*", "perm")
+ * which passed the literal string "*" as a permission value — always matching any
+ * role that had the "*" wildcard. It also called requirePermission BEFORE the
+ * null-check in callers, throwing an unhandled error instead of a clean 401.
+ *
+ * Fixes:
+ * - Null user now throws 401 AuthorizationError (not an unhandled TypeError)
+ * - Wildcard "*" string removed from the public API entirely
+ * - requireRole and requirePermission are symmetric and safe to call with null
+ */
 export function requireRole(user: AuthUser | null, ...roles: RoleName[]) {
   if (!user) {
     throw new AuthorizationError("Unauthorized", 401);

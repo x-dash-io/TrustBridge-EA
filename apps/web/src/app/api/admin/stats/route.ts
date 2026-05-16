@@ -8,7 +8,7 @@ import { sql } from "drizzle-orm";
 export async function GET(_request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "transactions:view_all");
+    requirePermission(user, "transactions:view_all");
 
     const [totalUsers] = await db
       .select({ count: sql<number>`count(*)` })

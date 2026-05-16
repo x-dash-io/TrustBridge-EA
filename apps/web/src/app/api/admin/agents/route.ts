@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 export async function GET(_request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    requirePermission(user, "*", "disputes:assign");
+    requirePermission(user, "disputes:assign");
 
     const rows = await db
       .select({
