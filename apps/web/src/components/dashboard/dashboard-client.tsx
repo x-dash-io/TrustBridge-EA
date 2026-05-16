@@ -29,9 +29,25 @@ interface Transaction {
   createdAt: string;
 }
 
+interface DashboardStats {
+  totalVolume: number;
+  activeCount: number;
+  completedCount: number;
+  pendingCount: number;
+  complianceRating: number;
+}
+
 export function DashboardClient() {
-  // In a real app, we'd fetch this from an API route
-  const { data: transactions, isLoading, error } = useQuery<Transaction[]>({
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard/stats");
+      if (!res.ok) throw new Error("Failed to load dashboard stats");
+      return res.json();
+    },
+  });
+
+  const { data: transactions, isLoading: txsLoading, error } = useQuery<Transaction[]>({
     queryKey: ["recent-transactions"],
     queryFn: async () => {
       const res = await fetch("/api/transactions/recent");
@@ -40,7 +56,7 @@ export function DashboardClient() {
     },
   });
 
-  if (isLoading) {
+  if (statsLoading || txsLoading) {
     return (
       <div className="space-y-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -66,21 +82,21 @@ export function DashboardClient() {
         <div className="bg-surface border border-border p-8">
           <p className="kicker mb-2">Total Volume</p>
           <div className="flex items-baseline gap-2">
-            <h2 className="text-[28px] font-bold tabular-nums">KES 0.00</h2>
+            <h2 className="text-[28px] font-bold tabular-nums">{formatKES(stats?.totalVolume || 0)}</h2>
             <span className="text-[11px] font-mono font-bold text-muted uppercase">Processed</span>
           </div>
         </div>
         <div className="bg-surface border border-border p-8">
           <p className="kicker mb-2">Active Escrows</p>
           <div className="flex items-baseline gap-2">
-            <h2 className="text-[28px] font-bold tabular-nums">0</h2>
+            <h2 className="text-[28px] font-bold tabular-nums">{stats?.activeCount || 0}</h2>
             <span className="text-[11px] font-mono font-bold text-accent uppercase">In Progress</span>
           </div>
         </div>
         <div className="bg-surface border border-border p-8">
           <p className="kicker mb-2">Compliance Rating</p>
           <div className="flex items-baseline gap-2">
-            <h2 className="text-[28px] font-bold tabular-nums">98%</h2>
+            <h2 className="text-[28px] font-bold tabular-nums">{stats?.complianceRating || 60}%</h2>
             <span className="text-[11px] font-mono font-bold text-success uppercase">Secured</span>
           </div>
         </div>
@@ -157,9 +173,9 @@ export function DashboardClient() {
         {/* Sidebar Actions */}
         <div className="space-y-8">
           <div className="bg-accent text-white p-8">
-            <ShieldCheck className="w-8 h-8 text-white/80 mb-6" />
+            <ShieldCheck className="w-8 h-8 text-accent-fg mb-6" />
             <h3 className="font-display text-[20px] font-bold mb-2">Institutional KYC</h3>
-            <p className="text-white/60 text-[13px] leading-relaxed mb-6">
+            <p className="text-accent-fg/80 text-[13px] leading-relaxed mb-6">
               Your entity is currently at <span className="text-white font-bold underline">Tier 1</span> (KSh 50,000 limit). Complete verification to increase your transaction capacity.
             </p>
             <Link href="/kyc">

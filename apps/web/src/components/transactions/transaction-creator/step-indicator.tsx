@@ -50,7 +50,7 @@ export function StepIndicator({ steps, currentStep, completedSteps }: StepIndica
               {/* Label */}
               <span className={cn(
                 "mt-4 text-[10px] font-mono font-bold uppercase tracking-widest transition-all",
-                isActive ? "text-fg" : isCompleted ? "text-success" : "text-muted"
+                isActive ? "text-accent" : isCompleted ? "text-success" : "text-muted"
               )}>
                 {step.label}
               </span>

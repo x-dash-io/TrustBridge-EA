@@ -4,6 +4,7 @@ import { useWizardStore, type MilestoneDraft } from "@/stores/wizard-store";
 import { parseAmount, formatKES } from "@/lib/utils/currency";
 import { Plus, Trash2, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 
 function createMilestone(overrides?: Partial<MilestoneDraft>): MilestoneDraft {
@@ -61,8 +62,8 @@ export function StepMilestones() {
 
       {/* Allocation Auditor */}
       <div className={cn(
-        "sticky top-[80px] z-20 p-6 border mb-10 transition-colors flex justify-between items-center",
-        amountsMatch ? "bg-success/5 border-success/20" : "bg-bg border-border shadow-sm"
+        "p-6 border mb-10 transition-colors flex justify-between items-center",
+        amountsMatch ? "bg-success/5 border-success/20" : "bg-bg border-border"
       )}>
         <div>
           <p className="kicker text-muted mb-1">Total Allocated</p>
@@ -130,15 +131,11 @@ export function StepMilestones() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block kicker">Target Delivery Date</label>
-                <input
-                  type="date"
-                  value={m.dueDate}
-                  onChange={(e) => handleChange(m.id, "dueDate", e.target.value)}
-                  className="w-full bg-bg border border-border p-3 text-[14px] outline-none focus:border-accent font-mono uppercase text-[12px]"
-                />
-              </div>
+              <DatePicker
+                kicker="Target Delivery Date"
+                value={m.dueDate}
+                onChange={(val) => handleChange(m.id, "dueDate", val)}
+              />
 
               <div className="md:col-span-2 space-y-2">
                 <label className="block kicker">Verification Criteria</label>

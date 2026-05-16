@@ -9,6 +9,7 @@
   --color-accent: oklch(52% 0.10 28);
   --color-success: oklch(62% 0.17 145);
   --color-warning: oklch(75% 0.15 70);
+  --color-accent-fg: oklch(78% 0.13 65);
   --color-danger: oklch(55% 0.22 25);
 
   --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;

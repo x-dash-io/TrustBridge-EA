@@ -9,6 +9,8 @@ const protectedPaths = [
   "/disputes",
   "/notifications",
   "/settings",
+  "/admin",
+  "/agents",
 ];
 
 export async function middleware(request: NextRequest) {

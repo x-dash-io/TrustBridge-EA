@@ -23,6 +23,7 @@ export interface MilestoneDraft {
 export interface PartyDraft {
   id: string;
   role: "buyer" | "seller" | "agent" | "lawyer" | "observer";
+  name: string;
   email: string;
   phone: string;
 }
@@ -30,6 +31,7 @@ export interface PartyDraft {
 export interface WizardState {
   currentStep: number;
   completedSteps: number[];
+  creatorRole: "buyer" | "seller";
 
   assetClass: AssetClass | null;
   assetSubclass: string;
@@ -54,6 +56,7 @@ export interface WizardState {
 interface WizardActions {
   setStep: (step: number) => void;
   markStepComplete: (step: number) => void;
+  setCreatorRole: (role: "buyer" | "seller") => void;
   setAssetClass: (ac: AssetClass) => void;
   setAssetSubclass: (s: string) => void;
   setTitle: (t: string) => void;
@@ -74,6 +77,7 @@ interface WizardActions {
 const initialState: WizardState = {
   currentStep: 0,
   completedSteps: [],
+  creatorRole: "buyer",
   assetClass: null,
   assetSubclass: "",
   title: "",
@@ -99,6 +103,7 @@ export const useWizardStore = create<WizardState & WizardActions>((set) => ({
         ? s.completedSteps
         : [...s.completedSteps, step],
     })),
+  setCreatorRole: (role) => set({ creatorRole: role }),
   setAssetClass: (ac) =>
     set({ assetClass: ac, assetSubclass: "", currentStep: 0 }),
   setAssetSubclass: (s) => set({ assetSubclass: s }),

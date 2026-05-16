@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Transaction {
   id: string;
@@ -29,20 +29,35 @@ interface Transaction {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 export function TransactionListClient() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [statusFilter]);
+  const pageSize = 10;
 
-  const { data: transactions, isLoading, error } = useQuery<Transaction[]>({
-    queryKey: ["transactions", statusFilter],
+  const { data, isLoading, error } = useQuery<{ transactions: Transaction[]; pagination: PaginationInfo }>({
+    queryKey: ["transactions", statusFilter, page],
     queryFn: async () => {
-      const res = await fetch(`/api/transactions?status=${statusFilter}`);
+      const res = await fetch(`/api/transactions?status=${statusFilter}&page=${page}&limit=${pageSize}`);
       if (!res.ok) throw new Error("Failed to load transactions");
       return res.json();
     },
   });
 
-  const filteredTransactions = transactions?.filter(tx => 
+  const transactions = data?.transactions || [];
+  const pagination = data?.pagination;
+
+  const filteredTransactions = transactions.filter(tx => 
     tx.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tx.reference.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -161,11 +176,27 @@ export function TransactionListClient() {
           
           <div className="p-6 border-t border-border bg-muted/5 flex justify-between items-center">
             <p className="text-[12px] text-muted font-mono uppercase">
-              Showing {filteredTransactions.length} of {transactions?.length} Synchronized Records
+              Page {pagination?.page || 1} of {pagination?.totalPages || 1} &mdash; {pagination?.total || 0} Total Records
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="font-mono text-[10px] uppercase border-border" disabled>Previous</Button>
-              <Button variant="outline" size="sm" className="font-mono text-[10px] uppercase border-border" disabled>Next</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="font-mono text-[10px] uppercase border-border"
+                disabled={!pagination?.hasPrev}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="font-mono text-[10px] uppercase border-border"
+                disabled={!pagination?.hasNext}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
             </div>
           </div>
         </div>

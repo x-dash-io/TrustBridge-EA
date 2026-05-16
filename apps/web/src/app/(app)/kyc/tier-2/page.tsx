@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { UploadZone } from "@/components/kyc/upload-zone";
+import { SmartSelfieCapture } from "@/components/kyc/smart-selfie-capture";
 import { cn } from "@/lib/utils";
 
 type Step = 1 | 2 | 3;
@@ -156,14 +157,11 @@ export default function Tier2KycFlow() {
                 </ul>
               </div>
 
-              <Button 
-                variant="primary" 
-                size="lg" 
-                className="w-full font-mono uppercase tracking-widest py-6"
-                onClick={nextStep}
-              >
-                Start Face Scan
-              </Button>
+              <SmartSelfieCapture
+                product="smartselfie"
+                onSuccess={() => nextStep()}
+                onError={(err) => console.error("Liveness check failed:", err)}
+              />
             </div>
 
             <div className="pt-8 border-t border-border flex justify-start">

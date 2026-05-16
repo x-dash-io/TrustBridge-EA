@@ -116,12 +116,12 @@ export function FileVault() {
         
         <div className="p-6 bg-accent text-white flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-accent" />
+            <ShieldCheck className="w-5 h-5 text-accent-fg" />
             <p className="text-[12px] font-mono font-bold uppercase tracking-widest">
               End-to-End Encryption Active
             </p>
           </div>
-          <p className="text-[11px] text-white/50 font-mono italic">
+          <p className="text-[11px] text-accent-fg/80 font-mono italic">
             Vault synchronized with regional legal nodes.
           </p>
         </div>

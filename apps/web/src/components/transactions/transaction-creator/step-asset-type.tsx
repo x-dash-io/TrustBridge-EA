@@ -8,7 +8,8 @@ import {
   FileText, 
   Briefcase, 
   Zap,
-  ChevronRight
+  ChevronRight,
+  ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,10 @@ const subclasses: Record<AssetClass, { value: string; label: string }[]> = {
 };
 
 export function StepAssetType() {
-  const { assetClass, assetSubclass, setAssetClass, setAssetSubclass, markStepComplete, setStep } = useWizardStore();
+  const { 
+    assetClass, assetSubclass, setAssetClass, setAssetSubclass, 
+    markStepComplete, setStep, creatorRole, setCreatorRole 
+  } = useWizardStore();
 
   const handleNext = () => {
     if (assetClass) {
@@ -74,6 +78,36 @@ export function StepAssetType() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
+      <div className="mb-8 flex items-center gap-4 bg-surface border border-border p-4">
+        <ArrowRightLeft className="w-5 h-5 text-muted" />
+        <div className="flex-1">
+          <p className="kicker">Initiator Role</p>
+          <p className="text-[13px] text-muted">Are you acting as the Buyer or the Seller in this transaction?</p>
+        </div>
+        <div className="flex bg-bg border border-border p-1">
+          <button
+            type="button"
+            onClick={() => setCreatorRole("buyer")}
+            className={cn(
+              "px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition-all",
+              creatorRole === "buyer" ? "bg-accent text-white" : "text-muted hover:text-fg"
+            )}
+          >
+            Buyer
+          </button>
+          <button
+            type="button"
+            onClick={() => setCreatorRole("seller")}
+            className={cn(
+              "px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition-all",
+              creatorRole === "seller" ? "bg-accent text-white" : "text-muted hover:text-fg"
+            )}
+          >
+            Seller
+          </button>
+        </div>
+      </div>
+
       <div className="mb-10">
         <p className="kicker mb-2">Step 01 / 06</p>
         <h2 className="font-display text-[32px] font-bold tracking-tight">Asset Classification</h2>

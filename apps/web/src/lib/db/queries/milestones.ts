@@ -20,6 +20,15 @@ export async function getMilestoneById(id: string) {
   return result[0] || null;
 }
 
+export async function createMilestone(data: NewMilestone) {
+  const result = await db
+    .insert(milestones)
+    .values(data)
+    .returning();
+
+  return result[0];
+}
+
 export async function updateMilestoneStatus(id: string, status: string, additionalData: Partial<typeof milestones.$inferInsert> = {}) {
   const result = await db
     .update(milestones)

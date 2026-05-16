@@ -30,6 +30,37 @@ export const users = pgTable("users", {
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 
+// ─── ROLES ───────────────────────────────────────────────────────────────────
+
+export const roles = pgTable("roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").unique().notNull(),
+  description: text("description"),
+  permissions: jsonb("permissions").$type<string[]>().default([]),
+  isSystem: boolean("is_system").default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export type Role = InferSelectModel<typeof roles>;
+export type NewRole = InferInsertModel<typeof roles>;
+
+// ─── USER ROLES (junction) ───────────────────────────────────────────────────
+
+export const userRoles = pgTable("user_roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  roleId: uuid("role_id")
+    .references(() => roles.id)
+    .notNull(),
+  assignedById: uuid("assigned_by_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export type UserRole = InferSelectModel<typeof userRoles>;
+export type NewUserRole = InferInsertModel<typeof userRoles>;
+
 // ─── BUSINESSES ─────────────────────────────────────────────────────────────
 
 export const businesses = pgTable("businesses", {
@@ -81,6 +112,7 @@ export const transactionParties = pgTable("transaction_parties", {
   transactionId: uuid("transaction_id").references(() => transactions.id),
   userId: uuid("user_id").references(() => users.id),
   role: text("role").notNull(),
+  inviteName: text("invite_name"),
   inviteEmail: text("invite_email"),
   invitePhone: text("invite_phone"),
   status: text("status").default("invited"),

@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+const { Signature, WebApi, JOB_TYPE } = require("smile-identity-core");
 
 interface EnhancedKycRequest {
   partner_id: string;
@@ -17,11 +18,21 @@ export class SmileIdentityClient {
   private partnerId: string;
   private apiKey: string;
   private baseUrl: string;
+  private callbackUrl: string;
+  private webApi: InstanceType<typeof WebApi>;
 
   constructor() {
     this.partnerId = process.env.SMILE_ID_PARTNER_ID || "";
     this.apiKey = process.env.SMILE_ID_API_KEY || "";
-    this.baseUrl = process.env.SMILE_ID_BASE_URL || "https://api.smileidentity.com/v1";
+    this.baseUrl = process.env.SMILE_ID_BASE_URL || "https://api.smileidentity.com";
+    this.callbackUrl = process.env.SMILE_ID_CALLBACK_URL || "";
+
+    this.webApi = new WebApi(
+      this.partnerId,
+      this.callbackUrl,
+      this.apiKey,
+      this.baseUrl.slice(0, -3) // remove /v1 suffix if present
+    );
   }
 
   private generateSignature(timestamp: string): string {
@@ -36,7 +47,7 @@ export class SmileIdentityClient {
     const body = {
       ...params,
       partner_id: this.partnerId,
-      callback_url: process.env.SMILE_ID_CALLBACK_URL,
+      callback_url: this.callbackUrl,
       timestamp,
       signature,
     };
@@ -79,6 +90,36 @@ export class SmileIdentityClient {
     }
 
     return res.json();
+  }
+
+  async getWebToken(params: {
+    userId: string;
+    jobId: string;
+    product: string;
+  }) {
+    const result = await this.webApi.get_web_token({
+      user_id: params.userId,
+      job_id: params.jobId,
+      product: params.product,
+      callback_url: this.callbackUrl,
+    });
+
+    return result as { token: string; signature: string };
+  }
+
+  async submitJob(partnerParams: {
+    user_id: string;
+    job_id: string;
+    job_type: number;
+  }, images: Record<string, string>[], options?: { return_job_status?: boolean }) {
+    const result = await this.webApi.submit_job(
+      partnerParams,
+      images,
+      {},
+      options || { return_job_status: true }
+    );
+
+    return result;
   }
 }
 

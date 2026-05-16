@@ -37,7 +37,7 @@ export function PaymentScreen({ transaction }: PaymentScreenProps) {
     <div className="max-w-[600px] mx-auto px-4 py-12">
       <Link
         href="/dashboard"
-        className="font-display text-[20px] font-bold no-underline text-[var(--color-fg)] block text-center mb-12"
+        className="font-display text-[20px] font-bold no-underline text-fg block text-center mb-12"
       >
         TrustBridge
       </Link>

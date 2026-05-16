@@ -117,7 +117,7 @@ export default function RegisterPage() {
           <button 
             type="submit" 
             disabled={isPending}
-            className="md:col-span-2 w-full bg-accent text-white py-4 text-[13px] font-mono uppercase tracking-[0.2em] font-bold hover:bg-fg transition-colors rounded-none mt-4 disabled:opacity-50"
+            className="md:col-span-2 w-full bg-accent text-white py-4 text-[13px] font-mono uppercase tracking-[0.2em] font-bold hover:bg-accent/90 transition-colors rounded-none mt-4 disabled:opacity-50"
           >
             {isPending ? "Processing Enrollment..." : "Finalize Enrollment"}
           </button>

@@ -8,6 +8,7 @@ import { login } from "@/lib/auth/actions";
 import { useState } from "react";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { filterPhoneInput } from "@/lib/validation";
+import { createClient } from "@/lib/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid institutional email address"),
@@ -48,9 +49,30 @@ export default function LoginPage() {
   const handlePhoneOtp = async () => {
     setIsPending(true);
     setServerError(null);
-    // M-Pesa OTP verification will be implemented with Africa's Talking
-    console.log("Phone OTP requested for:", phoneNumber);
-    setIsPending(false);
+
+    try {
+      const supabase = createClient();
+      const sanitizedPhone = phoneNumber.startsWith("0")
+        ? "+254" + phoneNumber.slice(1)
+        : phoneNumber.startsWith("254")
+        ? "+" + phoneNumber
+        : phoneNumber;
+
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: sanitizedPhone,
+      });
+
+      if (error) {
+        setServerError(error.message);
+      } else {
+        setServerError(null);
+        // OTP sent successfully - in production this would redirect to a verify page
+      }
+    } catch {
+      setServerError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -143,7 +165,7 @@ export default function LoginPage() {
             <button 
               type="submit" 
               disabled={isPending}
-              className="w-full bg-accent text-white py-4 text-[13px] font-mono uppercase tracking-[0.2em] font-bold hover:bg-fg transition-colors rounded-none disabled:opacity-50"
+              className="w-full bg-accent text-white py-4 text-[13px] font-mono uppercase tracking-[0.2em] font-bold hover:bg-accent/90 transition-colors rounded-none disabled:opacity-50"
             >
               {isPending ? "Verifying..." : "Authenticate"}
             </button>

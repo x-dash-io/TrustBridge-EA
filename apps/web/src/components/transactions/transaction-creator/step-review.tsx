@@ -1,8 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useWizardStore } from "@/stores/wizard-store";
 import { formatKES, parseAmount, calcFee } from "@/lib/utils/currency";
-import { generateReference } from "@/lib/utils/reference";
 import { 
   FileText, 
   ArrowLeftRight, 
@@ -11,9 +11,11 @@ import {
   ChevronLeft,
   CheckSquare,
   Lock,
-  Globe
+  Globe,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { cn } from "@/lib/utils";
 
 const assetLabels: Record<string, string> = {
@@ -25,11 +27,16 @@ const assetLabels: Record<string, string> = {
   services: "Professional Services",
 };
 
-const roleLabels: Record<string, string> = {
-  seller: "Counterparty (Seller)",
-  agent: "Verification Agent",
-  lawyer: "Legal Counsel",
-  observer: "Audit Observer",
+const getRoleLabel = (role: string, creatorRole: string) => {
+  if (role === creatorRole) return `${role.charAt(0).toUpperCase() + role.slice(1)} (Initiator)`;
+  if (role === "buyer" || role === "seller") return `Counterparty (${role.charAt(0).toUpperCase() + role.slice(1)})`;
+  
+  const staticLabels: Record<string, string> = {
+    agent: "Verification Agent",
+    lawyer: "Legal Counsel",
+    observer: "Audit Observer",
+  };
+  return staticLabels[role] || role;
 };
 
 export function StepReview() {
@@ -38,19 +45,55 @@ export function StepReview() {
     amount, inspectionPeriodDays, terms, includeDataRoom,
     milestones, parties, agreedToTerms, setAgreedToTerms,
     setTransactionRef, setTransactionId,
-    markStepComplete, setStep,
+    markStepComplete, setStep, creatorRole,
   } = useWizardStore();
 
   const numAmount = parseAmount(amount);
   const fee = calcFee(numAmount);
 
-  const handleCreate = async () => {
-    const ref = generateReference();
-    setTransactionRef(ref);
-    setTransactionId("new-" + Date.now());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-    markStepComplete(4);
-    setStep(5);
+  const handleCreate = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assetClass,
+          assetSubclass,
+          title,
+          description,
+          currency,
+          amount,
+          inspectionPeriodDays,
+          terms,
+          includeDataRoom,
+          milestones,
+          parties,
+          creatorRole,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create transaction");
+      }
+
+      const tx = await res.json();
+      setTransactionRef(tx.reference);
+      setTransactionId(tx.id);
+
+      markStepComplete(4);
+      setStep(5);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "An institutional error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -125,11 +168,19 @@ export function StepReview() {
             <Users className="w-4 h-4 text-muted" />
             <h3 className="kicker">Involved Entities</h3>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {parties.map((p) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <span className="text-[12px] font-mono uppercase text-muted tracking-tight">{roleLabels[p.role]}</span>
-                <span className="text-[14px] font-bold tabular-nums">{p.email || p.phone}</span>
+              <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div>
+                  <p className="text-[14px] font-bold">{p.name || "—"}</p>
+                  <p className="text-[11px] font-mono uppercase text-muted tracking-tight">
+                    {getRoleLabel(p.role, creatorRole)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  {p.email && <p className="text-[12px] font-mono text-muted">{p.email}</p>}
+                  {p.phone && <p className="text-[12px] font-mono text-muted">{p.phone}</p>}
+                </div>
               </div>
             ))}
           </div>
@@ -138,21 +189,21 @@ export function StepReview() {
         {/* Final Settlement Audit */}
         <div className="bg-accent text-white p-8">
           <div className="flex items-center gap-2 mb-6">
-            <ShieldCheck className="w-4 h-4 text-accent" />
-            <h3 className="kicker text-white/60">Institutional Settlement Audit</h3>
+            <ShieldCheck className="w-4 h-4 text-white/80" />
+            <h3 className="kicker text-white/80">Institutional Settlement Audit</h3>
           </div>
           <div className="space-y-4">
             <div className="flex justify-between text-[14px]">
-              <span className="text-white/50 font-mono text-[11px] uppercase">Base Amount</span>
+              <span className="text-white/60 font-mono text-[11px] uppercase">Base Amount</span>
               <span className="font-bold tabular-nums">{formatKES(numAmount)}</span>
             </div>
             <div className="flex justify-between text-[14px]">
-              <span className="text-white/50 font-mono text-[11px] uppercase">Compliance Fee</span>
+              <span className="text-white/60 font-mono text-[11px] uppercase">Compliance Fee</span>
               <span className="font-bold tabular-nums">{formatKES(fee)}</span>
             </div>
-            <div className="pt-4 border-t border-white/10 flex justify-between items-end">
+            <div className="pt-4 border-t border-white/20 flex justify-between items-end">
               <div>
-                <p className="text-[11px] font-mono text-white/50 uppercase mb-1">Final Settlement</p>
+                <p className="text-[11px] font-mono text-white/60 uppercase mb-1">Final Settlement</p>
                 <p className="font-display text-[18px] font-bold">Total Funding Required</p>
               </div>
               <p className="text-[32px] font-bold tabular-nums tracking-tighter">
@@ -161,6 +212,10 @@ export function StepReview() {
             </div>
           </div>
         </div>
+
+        {submitError && (
+          <ErrorMessage variant="inline" message={submitError!} />
+        )}
 
         {/* Legal Consent */}
         <div className="p-8 border border-border bg-muted/5 space-y-6">
@@ -194,11 +249,20 @@ export function StepReview() {
           variant="primary"
           size="lg"
           onClick={handleCreate}
-          disabled={!agreedToTerms}
+          disabled={!agreedToTerms || isSubmitting}
           className="font-mono uppercase tracking-[0.2em] flex items-center gap-2"
         >
-          Authorize & Dispatch
-          <ArrowLeftRight className="w-4 h-4 ml-2" />
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Dispatching...
+            </>
+          ) : (
+            <>
+              Authorize & Dispatch
+              <ArrowLeftRight className="w-4 h-4 ml-2" />
+            </>
+          )}
         </Button>
       </div>
     </div>

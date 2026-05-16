@@ -1,7 +1,8 @@
 # TrustBridge Project Audit
 
 **Date**: 2026-05-16  
-**Overall completion**: ~55-60%
+**Last Updated**: 2026-05-16 (Major update — Phase 1-4 implemented)  
+**Overall completion**: ~80-85%
 
 ---
 
@@ -172,7 +173,18 @@
 | /api/milestones/[id]/deliver | POST | DONE | File upload to Supabase Storage, status update |
 | /api/milestones/[id]/dispute | POST | DONE | Dispute creation in DB |
 
-**Missing**: POST /api/transactions, Data room file APIs (upload/list/download)
+**Previously Missing (Now Implemented)**:
+  - POST /api/transactions — Zod validation, creates tx + milestones + parties + audit log
+  - GET /api/transactions/[id]/data-room — List files with data room metadata
+  - POST /api/transactions/[id]/data-room — Upload file to Supabase Storage + DB record
+  - POST /api/transactions/[id]/data-room/nda — Sign NDA, unlock data room, audit log
+  - GET /api/transactions/[id]/data-room/[fileId]/download — Download file with audit trail
+  - GET /api/notifications — List notifications with pagination + unread count
+  - PATCH /api/notifications — Mark single/all notifications as read
+  - GET /api/disputes/[id] — Dispute detail with messages + evidence
+  - GET/POST /api/disputes/[id]/messages — Dispute messaging thread
+  - GET/POST /api/disputes/[id]/evidence — Evidence upload with storage
+  - GET /api/dashboard/stats — Real dashboard statistics from DB
 
 ---
 
@@ -200,29 +212,27 @@ Primary highlight color changed from `fg` (black) to `accent` (oxblood) across t
 
 ## PARTIAL
 
-### Auth (60%)
-- **Done**: Login (email/password + phone OTP tab), register, Supabase auth actions, middleware
-- **Missing**: Forgot-password page (linked, 404), email verify page, phone OTP handler is `console.log` stub, MFA not started
+### Auth (85%)
+- **Done**: Login (email/password + phone OTP tab via Supabase Auth), register, Supabase auth actions, middleware, forgot-password page, email verify page, phone OTP handler
+- **Missing**: MFA not started
 
-### Dashboard (95%)
-- **Done**: Stats row, recent transactions table, KYC upgrade card, quick actions sidebar
-- **Missing**: All stats are hardcoded (Volume: KES 0.00, Active: 0, Compliance: 98%)
+### Dashboard (100%)
+- **Done**: Stats row with real API data (/api/dashboard/stats), recent transactions table, KYC upgrade card, quick actions sidebar
+- **Missing**: None
 
-### KYC (50%)
-- **Done**: 4 tiers displayed, Tier 2 flow (3-step UI: document upload, liveness, proof of address), upload zone component, Smile Identity client
-- **Missing**: "Start Face Scan" is UI-only (no Smile Identity SDK integration), Tiers 3/4 flows not started, KYB (business verification) not started
+### KYC (80%)
+- **Done**: 4 tiers displayed, Tier 2 flow (3-step UI), Tier 3 flow (Enhanced Due Diligence with source of funds/PEP declaration), Tier 4/KYB (business verification with KRA PIN, registration, director docs), upload zone component, Smile Identity client
+- **Missing**: "Start Face Scan" is UI-only (no Smile Identity SDK integration)
 
-### Data Room (60%)
-- **Done**: NDA gate component, file vault component (with search, file icons, download/view), full schema
-- **Missing**: No upload/list/download API routes, no real Supabase Storage integration, NDA not persisted to DB (local state only)
+### Data Room (100%)
+- **Done**: NDA gate component, file vault component, full schema, upload/list/download API routes, Supabase Storage integration, NDA signing persisted to DB with audit log
 
-### Disputes (40%)
-- **Done**: Dispute list page, API endpoint (mock data), schema (disputes, messages, evidence)
-- **Missing**: Detail page is placeholder text, no chat/messaging UI, no evidence upload UI
+### Disputes (90%)
+- **Done**: Dispute list page, detail page with full messaging thread, evidence upload UI, API endpoints for messages/evidence CRUD, audit logging
 
-### Notifications (50%)
-- **Done**: SMS (Africa's Talking), email (Resend), WhatsApp (Africa's Talking), USSD handler, dispatcher (Promise.allSettled), schema
-- **Missing**: Notification page is a 5-line placeholder, no in-app bell dropdown, no read/unread, no preferences/settings, no API routes
+### Notifications (80%)
+- **Done**: Notification page with real API, read/unread toggle, mark-all-read, type-specific icons, transaction links, notification dispatcher library, schema
+- **Missing**: In-app bell dropdown in TopNav, preferences/settings page
 
 ### Infrastructure (30%)
 - **Done**: next.config, tsconfig (strict), drizzle.config, postcss.config, .env.example (54 vars), .gitignore
@@ -232,60 +242,60 @@ Primary highlight color changed from `fg` (black) to `accent` (oxblood) across t
 
 ## NOT STARTED
 
-### Marketing Pages
-- Landing page is a 7-line stub (`"TrustBridge — Landing page scaffold"`)
-- Pricing, How It Works, Asset Types pages all return 404
-- No hero, features, testimonials, FAQs, or call-to-action content
+### Marketing Pages — COMPLETE
+- Landing page: Full hero, features grid, asset classes, CTA section
+- Pricing: 3 tiers (Standard/Professional/Enterprise) with feature comparison
+- How It Works: 6-step process with detailed explanation
+- Asset Types: 6 asset classes with examples and fee ranges
 
-### Missing Pages
-- Forgot-password (404)
-- Email verification (404)
-- Dispute detail (placeholder only)
-- Pricing, How It Works, Asset Types (all 404)
+### Missing Pages (Remaining)
+- Settings page (placeholder only)
+- Agent network map (not started)
+- Fee calculator (not started)
 
-### Missing API Routes
-- **POST /api/transactions** — critical gap, wizard cannot persist transactions
-- Data room file upload/list/download — schema exists, no endpoints
+### Missing API Routes (Remaining)
+- POST /api/webhooks/mpesa/b2c — B2C result callback
+- POST /api/webhooks/flutterwave — Flutterwave payment webhooks
+- GET /api/fx-rates — FX rates endpoint
+- POST /api/businesses — KYB business registration
 
-### Missing Features
-- KYC Tiers 3 & 4 flows
-- KYB (business verification)
-- Dispute messaging/evidence UI
-- Notification center UI
+### Missing Features (Remaining)
+- In-app bell dropdown in TopNav
 - Agent assignment system (all pages, components, API routes)
 - FX rates engine (fetcher, converter, API endpoint, cron job)
 - Audit trail viewer page + timeline component + hash verification
+- Tests (unit + integration + E2E)
+- Docker + CI/CD setup
+- Framer Motion page transitions
 
 ---
 
 ## GAP ANALYSIS / NEXT STEPS
 
-### Critical (blocking end-to-end flow)
-1. POST /api/transactions route — wizard review has no API to call
-2. Forgot-password & verify email pages — broken auth flow
-3. Marketing pages — landing page stub blocks public launch
+### ✅ RESOLVED (Phase 1-4)
+1. POST /api/transactions route — fully implemented with Zod validation
+2. Forgot-password & verify email pages — both created with Supabase Auth
+3. Marketing pages — landing, pricing, how-it-works, assets all built
+4. Data room API routes + Supabase Storage integration — complete CRUD
+5. Notification center UI + API — full page with read/unread, type icons
+6. Transaction pagination — functional with page/limit/offset
+7. Dispute detail page — messaging + evidence upload working
+8. KYC Tiers 3 & 4 flows + KYB — both pages created
+9. Dashboard real data — /api/dashboard/stats returns live DB stats
+10. Phone OTP handler — uses Supabase Auth signInWithOtp
 
-### High Priority
-4. Tier 2 KYC liveness — "Start Face Scan" does nothing
-5. Data room API routes + Supabase Storage integration
-6. Notification center UI + API
-7. Transaction pagination (always disabled)
-
-### Medium Priority
-8. Dispute detail page (messaging + evidence upload)
-9. KYC Tiers 3 & 4 flows
-10. KYB business verification UI
-11. Tests (unit + integration + E2E)
-
-### Low Priority / Polish
-12. Dashboard real data from DB (not hardcoded)
-13. Framer Motion for page transitions
-14. Recharts for data visualization
-15. Docker + CI/CD setup
-16. Redis/BullMQ for async job processing
-17. Agent assignment system
-18. FX rates engine
-19. Audit trail viewer
+### Remaining Work
+11. **Tier 2 KYC liveness** — "Start Face Scan" does nothing (needs Smile Identity SDK)
+12. **In-app bell dropdown** in TopNav for notification count/preview
+13. **Settings page** — currently placeholder
+14. **FX rates engine** — fetcher, converter, API endpoint
+15. **Agent assignment system** — all pages, components, API routes
+16. **Audit trail viewer** — timeline component + hash verification
+17. **Tests** — unit + integration + E2E (zero test files currently)
+18. **Docker + CI/CD** — no Dockerfile, no GitHub Actions
+19. **Framer Motion** — for page transitions (unused despite being listed)
+20. **Recharts** — for data visualization (unused despite being listed)
+21. **Redis/BullMQ** — for async job processing
 
 ---
 
@@ -316,3 +326,44 @@ Primary highlight color changed from `fg` (black) to `accent` (oxblood) across t
 - `apps/web/src/app/(marketing)/layout.tsx` — nav link hover states
 - `.gitignore` — created with sensitive file patterns
 - `docs/06-PROJECT-AUDIT.md` — this file
+
+---
+
+### Phase 1-4 New Files (2026-05-16)
+
+**Phase 1 — Critical:**
+- `apps/web/src/app/api/transactions/route.ts` — Added POST handler with Zod, creates tx+milestones+parties+audit
+- `apps/web/src/components/transactions/transaction-creator/step-review.tsx` — Calls real API, shows loading/error states
+- `apps/web/src/lib/db/queries/milestones.ts` — Added `createMilestone`
+- `apps/web/src/app/(auth)/forgot-password/page.tsx` — Full password reset flow via Supabase Auth
+- `apps/web/src/app/(auth)/verify/page.tsx` — Email/OTP verification page
+- `apps/web/src/app/page.tsx` — Full landing page with hero, features, asset classes, CTA
+- `apps/web/src/app/(marketing)/pricing/page.tsx` — 3-tier pricing page
+- `apps/web/src/app/(marketing)/how-it-works/page.tsx` — 6-step explanation page
+- `apps/web/src/app/(marketing)/assets/page.tsx` — 6 asset class directory
+
+**Phase 2 — High Priority:**
+- `apps/web/src/lib/db/queries/data-room.ts` — Data room CRUD queries
+- `apps/web/src/app/api/transactions/[id]/data-room/route.ts` — GET (list), POST (upload)
+- `apps/web/src/app/api/transactions/[id]/data-room/nda/route.ts` — POST (sign NDA)
+- `apps/web/src/app/api/transactions/[id]/data-room/[fileId]/download/route.ts` — GET (download)
+- `apps/web/src/lib/db/queries/notifications.ts` — Notification CRUD queries
+- `apps/web/src/app/api/notifications/route.ts` — GET (list), PATCH (mark read)
+- `apps/web/src/app/(app)/notifications/page.tsx` — Full notification center UI
+- `apps/web/src/components/transactions/transaction-list-client.tsx` — Enabled pagination
+- `apps/web/src/app/api/transactions/route.ts` — Added page/limit pagination support
+
+**Phase 3 — Medium Priority:**
+- `apps/web/src/lib/db/queries/disputes.ts` — Dispute CRUD queries
+- `apps/web/src/app/api/disputes/[id]/route.ts` — GET dispute detail
+- `apps/web/src/app/api/disputes/[id]/messages/route.ts` — GET/POST messages
+- `apps/web/src/app/api/disputes/[id]/evidence/route.ts` — GET/POST evidence
+- `apps/web/src/app/(app)/disputes/[id]/page.tsx` — Full dispute detail with chat + evidence
+- `apps/web/src/app/(app)/kyc/tier-3/page.tsx` — Enhanced Due Diligence flow
+- `apps/web/src/app/(app)/kyc/tier-4/page.tsx` — KYB business verification flow
+- `apps/web/src/app/(app)/kyc/page.tsx` — Tier 3 & 4 made actionable
+
+**Phase 4 — Polish:**
+- `apps/web/src/app/api/dashboard/stats/route.ts` — Real dashboard stats from DB
+- `apps/web/src/components/dashboard/dashboard-client.tsx` — Uses real stats API
+- `apps/web/src/app/(auth)/login/page.tsx` — Phone OTP via Supabase Auth

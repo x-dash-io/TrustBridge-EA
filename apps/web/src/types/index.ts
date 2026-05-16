@@ -34,3 +34,28 @@ export type PartyRole =
   | "observer";
 
 export type NotificationChannel = "sms" | "whatsapp" | "email" | "in_app";
+
+// ─── RBAC ────────────────────────────────────────────────────────────────────
+
+export type RoleName =
+  | "super_admin"
+  | "compliance_officer"
+  | "mediator"
+  | "support_agent"
+  | "auditor"
+  | "user";
+
+export type Permission = string;
+
+export interface UserRoleInfo {
+  roleId: string;
+  roleName: RoleName;
+  permissions: Permission[];
+}
+
+export interface AuthUserInfo {
+  id: string;
+  email: string;
+  roles: UserRoleInfo[];
+  allPermissions: Permission[];
+}

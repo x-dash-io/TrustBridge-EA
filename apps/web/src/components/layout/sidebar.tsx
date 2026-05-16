@@ -20,6 +20,7 @@ import { signOut } from "@/lib/auth/actions";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
+import { AdminSidebarItems } from "./admin-sidebar-items";
 
 interface NavItem {
   label: string;
@@ -32,6 +33,7 @@ const mainNav: NavItem[] = [
   { label: "Transactions", href: "/transactions", icon: ArrowLeftRight },
   { label: "Identity & KYC", href: "/kyc", icon: ShieldCheck },
   { label: "Disputes", href: "/disputes", icon: Scale },
+  { label: "Agents", href: "/agents", icon: ShieldCheck },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -112,6 +114,8 @@ export function Sidebar() {
             );
           })}
         </ul>
+
+        <AdminSidebarItems collapsed={collapsed} />
       </nav>
 
       {/* User Footer */}

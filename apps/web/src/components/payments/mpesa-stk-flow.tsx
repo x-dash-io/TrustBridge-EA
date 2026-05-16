@@ -199,7 +199,7 @@ export function MpesaStkFlow({
     <div>
       {status === "sending" && (
         <div className="text-center py-8">
-          <div className="inline-block w-8 h-8 border-2 border-[var(--color-border)] border-t-[var(--color-fg)] rounded-none animate-spin mb-4" />
+          <div className="inline-block w-8 h-8 border-2 border-border border-t-accent rounded-none animate-spin mb-4" />
           <p className="text-[14px] text-muted">Sending payment request...</p>
         </div>
       )}
@@ -265,7 +265,7 @@ export function MpesaStkFlow({
           <button
             type="button"
             onClick={handleRetry}
-            className="bg-[var(--color-accent)] text-white px-8 py-3 text-[14px] font-[600] hover:bg-[var(--color-fg)] transition-colors mt-4"
+            className="bg-accent text-white px-8 py-3 text-[14px] font-[600] hover:bg-accent/90 transition-colors mt-4"
           >
             Try Again
           </button>
@@ -299,7 +299,7 @@ export function MpesaStkFlow({
             type="button"
             onClick={handleSubmit}
             disabled={!isValidPhone(phone)}
-            className="w-full bg-[var(--color-accent)] text-white p-4 text-[14px] font-[600] hover:bg-[var(--color-fg)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-accent text-white p-4 text-[14px] font-[600] hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Send M-Pesa Request
           </button>

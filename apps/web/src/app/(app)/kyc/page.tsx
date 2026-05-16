@@ -101,14 +101,16 @@ export default function KycDashboard() {
         <TierCard 
           tier={3}
           limit="KSh 10,000,000"
-          status="locked"
-          features={["High-Value Transactions", "Bank Wire Support", "Priority Processing", "International Assets", "Manual Review"]}
+          status="action_required"
+          features={["Enhanced Due Diligence", "Source of Funds Declaration", "PEP Screening", "High-Value Transactions", "Manual Review"]}
+          isActionable
         />
         <TierCard 
           tier={4}
           limit="Unlimited"
-          status="locked"
-          features={["Institutional Vaults", "API Access", "Dedicated Relationship Manager", "Custom Legal Frameworks", "Corporate Account"]}
+          status="action_required"
+          features={["Business Verification (KYB)", "KRA PIN Validation", "Director Verification", "Corporate Account", "Unlimited Limits"]}
+          isActionable
         />
       </div>
 

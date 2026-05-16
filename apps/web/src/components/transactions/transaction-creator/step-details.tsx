@@ -63,6 +63,8 @@ export function StepDetails() {
     },
   });
 
+  const watchCurrency = watch("currency");
+  const watchInspection = watch("inspectionPeriodDays");
   const watchAmount = watch("amount");
   const numAmount = parseAmount(watchAmount || "0");
   const fee = calcFee(numAmount);
@@ -109,10 +111,11 @@ export function StepDetails() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Select
-            kicker="Base Currency"
-            options={currencies}
-            {...register("currency")}
-          />
+              kicker="Base Currency"
+              options={currencies}
+              value={watchCurrency}
+              {...register("currency")}
+            />
           </div>
 
           <div className="md:col-span-2 space-y-2">
@@ -141,22 +144,22 @@ export function StepDetails() {
         {numAmount > 0 && (
           <div className="bg-accent text-white p-8 space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <Info className="w-4 h-4 text-accent" />
-              <p className="kicker text-white/60">Institutional Fee Audit</p>
+              <Info className="w-4 h-4 text-white/80" />
+              <p className="kicker text-white/80">Institutional Fee Audit</p>
             </div>
             <div className="flex justify-between items-end">
               <div>
-                <p className="text-[12px] font-mono text-white/50 mb-1">Processing Rate</p>
+                <p className="text-[12px] font-mono text-white/60 mb-1">Processing Rate</p>
                 <p className="text-[16px] font-bold tabular-nums">{feeRate}%</p>
               </div>
               <div className="text-right">
-                <p className="text-[12px] font-mono text-white/50 mb-1">Computed Service Fee</p>
+                <p className="text-[12px] font-mono text-white/60 mb-1">Computed Service Fee</p>
                 <p className="text-[16px] font-bold tabular-nums">
                   {formatKES(fee)}
                 </p>
               </div>
             </div>
-            <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+            <div className="pt-4 border-t border-white/20 flex justify-between items-center">
               <p className="font-display text-[14px] font-bold">Total Settlement Amount</p>
               <p className="text-[24px] font-bold tabular-nums tracking-tighter">
                 {formatKES(numAmount + fee)}
@@ -170,6 +173,7 @@ export function StepDetails() {
           <Select
             kicker="Inspection Period"
             options={inspectionOptions.map((d) => ({ value: String(d), label: `${d} Business Days` }))}
+            value={String(watchInspection ?? "")}
             {...register("inspectionPeriodDays", { valueAsNumber: true })}
           />
           <p className="text-[12px] text-muted font-sans italic">
