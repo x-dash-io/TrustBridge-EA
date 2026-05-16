@@ -18,7 +18,7 @@ const steps = [
     icon: Wallet,
     step: "03",
     title: "Fund Escrow",
-    description: "Deposit funds via M-Pesa STK Push, wire transfer, or USDC. Funds are held in a CBK-regulated trust account.",
+    description: "Deposit funds via M-Pesa STK Push, wire transfer, or USDC. Funds are designed to be held in a segregated escrow account.",
   },
   {
     icon: Shield,

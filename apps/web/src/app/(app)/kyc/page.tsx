@@ -130,7 +130,7 @@ export default function KycDashboard() {
         <div className="flex flex-col gap-3 md:col-span-2 flex-row justify-end items-center gap-6">
           <div className="opacity-30 flex gap-8 grayscale">
             {/* Regulatory Badges Mock */}
-            <div className="font-mono text-[10px] font-bold border border-accent px-2 py-1">CBK REGULATED</div>
+            <div className="font-mono text-[10px] font-bold border border-accent px-2 py-1">COMPLIANCE READY</div>
             <div className="font-mono text-[10px] font-bold border border-accent px-2 py-1">PCI-DSS COMPLIANT</div>
             <div className="font-mono text-[10px] font-bold border border-accent px-2 py-1">ISO 27001</div>
           </div>

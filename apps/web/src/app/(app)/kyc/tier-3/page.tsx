@@ -83,7 +83,7 @@ export default function Tier3KycFlow() {
         </div>
         <h1 className="font-display text-[32px] font-bold mb-2">Enhanced Due Diligence</h1>
         <p className="text-[14px] text-muted font-sans max-w-xl">
-          CBK-regulated enhanced due diligence requires source of wealth declaration, business ownership attestation, and supporting documentation.
+          Enhanced due diligence requires source of wealth declaration, business ownership attestation, and supporting documentation.
         </p>
       </div>
 

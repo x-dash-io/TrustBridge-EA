@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         userId: kycSubmissions.userId,
         tier: kycSubmissions.tier,
         documentType: kycSubmissions.documentType,
-        documentNumber: kycSubmissions.documentNumber,
+        documentNumber: sql<string>`case when ${kycSubmissions.documentNumberBlindIndex} is null then null else '[encrypted]' end`,
         country: kycSubmissions.country,
         status: kycSubmissions.status,
         rejectionReason: kycSubmissions.rejectionReason,

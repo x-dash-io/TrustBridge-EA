@@ -1,8 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getPaymentByCheckoutId } from "@/lib/db/queries/payments";
+import { createClient } from "@/lib/supabase/server";
+import { getTransactionParties } from "@/lib/db/queries/transactions";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, "general", "mpesa:status");
+    if (limited) return limited;
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const checkoutRequestId = request.nextUrl.searchParams.get("checkoutRequestId");
 
     if (!checkoutRequestId) {
@@ -15,6 +27,14 @@ export async function GET(request: NextRequest) {
     const payment = await getPaymentByCheckoutId(checkoutRequestId);
 
     if (!payment) {
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+    }
+
+    const parties = payment.transactionId
+      ? await getTransactionParties(payment.transactionId)
+      : [];
+    const isParty = parties.some((p) => p.userId === user.id);
+    if (payment.payerId !== user.id && !isParty) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 

@@ -5,6 +5,8 @@ import { initiateSTKPush } from "@/lib/mpesa/stk-push";
 import { createPayment } from "@/lib/db/queries/payments";
 import { getTransactionById, getTransactionParties } from "@/lib/db/queries/transactions";
 import { logAuditEvent } from "@/lib/db/queries/audit";
+import { assertRealMoneyEnabled } from "@/lib/compliance/limits";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 const stkPushSchema = z.object({
   transactionId: z.string().uuid(),
@@ -19,6 +21,18 @@ const stkPushSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limited = await rateLimit(request, "strict", "mpesa:stk");
+  if (limited) return limited;
+
+  try {
+    assertRealMoneyEnabled("M-Pesa STK push");
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Real money disabled" },
+      { status: 503 }
+    );
+  }
+
   // 1. Authenticate caller
   const supabase = await createClient();
   const {

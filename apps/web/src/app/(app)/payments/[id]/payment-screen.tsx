@@ -222,7 +222,7 @@ export function PaymentScreen({ transaction }: PaymentScreenProps) {
 
       <div className="text-center mt-8">
         <p className="font-mono text-[11px] text-muted">
-          PCI-DSS COMPLIANT • AES-256 ENCRYPTION • CBK REGULATED ESCROW
+          PCI-DSS READY • AES-256 ENCRYPTION • SEGREGATED ESCROW CONTROLS
         </p>
         <p className="font-mono text-[10px] text-muted mt-1">
           Your session is encrypted and monitored for fraud prevention.

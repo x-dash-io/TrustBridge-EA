@@ -31,7 +31,7 @@ export default function MarketingLayout({
           <div className="mt-8 pt-8 border-t border-border flex justify-between text-[12px] text-muted">
             <p>&copy; {new Date().getFullYear()} TrustBridge EA. All rights reserved.</p>
             <div className="flex gap-6">
-              <span className="font-mono uppercase text-[10px] tracking-wider">CBK Regulated</span>
+              <span className="font-mono uppercase text-[10px] tracking-wider">Compliance Ready</span>
               <span className="font-mono uppercase text-[10px] tracking-wider">PCI-DSS Compliant</span>
             </div>
           </div>

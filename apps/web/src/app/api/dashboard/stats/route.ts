@@ -27,9 +27,9 @@ export async function GET() {
       const userData = await getUserById(user.id);
 
       totalVolume = txs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-      activeCount = txs.filter((tx) => tx.status === "active" || tx.status === "in_progress" || tx.status === "pending_funds").length;
+      activeCount = txs.filter((tx) => tx.status === "funded" || tx.status === "in_progress" || tx.status === "in_inspection" || tx.status === "pending_funds").length;
       completedCount = txs.filter((tx) => tx.status === "completed").length;
-      pendingCount = txs.filter((tx) => tx.status === "pending" || tx.status === "draft").length;
+      pendingCount = txs.filter((tx) => tx.status === "requires_review" || tx.status === "draft").length;
       complianceRating = userData?.kycTier ? Math.min(98, 60 + userData.kycTier * 10) : 60;
     } catch (dbError) {
       console.warn("Database not available, returning default stats:", dbError);

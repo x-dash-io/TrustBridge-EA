@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { payments, type NewPayment } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+type DbPaymentStatus = typeof payments.$inferSelect.status;
+
 export async function createPayment(data: NewPayment) {
   const result = await db.insert(payments).values(data).returning();
   return result[0];
@@ -36,7 +38,7 @@ export async function getPaymentsByTransactionId(transactionId: string) {
 
 export async function updatePaymentStatus(
   checkoutRequestId: string,
-  status: string,
+  status: DbPaymentStatus,
   providerReference?: string
 ) {
   const values: Record<string, unknown> = { status, updatedAt: new Date() };
@@ -55,7 +57,7 @@ export async function updatePaymentStatus(
 
 export async function updatePaymentStatusById(
   id: string,
-  status: string
+  status: DbPaymentStatus
 ) {
   const result = await db
     .update(payments)

@@ -4,6 +4,8 @@ import { verifyWebhookToken } from "@/lib/mpesa/webhook-verify";
 import { getPaymentByCheckoutId, updatePaymentStatus } from "@/lib/db/queries/payments";
 import { updateTransactionStatus } from "@/lib/db/queries/transactions";
 import { logAuditEvent } from "@/lib/db/queries/audit";
+import { parseMoney } from "@/lib/money";
+import { getOrCreateLedgerAccount, postLedgerEntry } from "@/lib/db/queries/ledger";
 
 /**
  * FIX BUG-03: Added secret-token verification on inbound M-Pesa STK callbacks.
@@ -61,6 +63,32 @@ export async function POST(request: NextRequest) {
 
       if (payment.transactionId) {
         await updateTransactionStatus(payment.transactionId, "funded");
+        const money = parseMoney(payment.amount, payment.currency);
+        const clearing = await getOrCreateLedgerAccount({
+          type: "provider_clearing",
+          currency: payment.currency,
+          name: `M-Pesa clearing ${payment.currency}`,
+          isSystem: true,
+        });
+        const escrow = await getOrCreateLedgerAccount({
+          transactionId: payment.transactionId,
+          type: "escrow",
+          currency: payment.currency,
+          name: `Escrow ${payment.transactionId}`,
+          isSystem: true,
+        });
+        await postLedgerEntry({
+          sourceType: "mpesa_stk",
+          sourceId: payment.id,
+          idempotencyKey: `mpesa_stk:${CheckoutRequestID}`,
+          description: "M-Pesa STK escrow funding",
+          createdBy: payment.payerId,
+          metadata: { receipt, checkoutRequestId: CheckoutRequestID },
+          postings: [
+            { accountId: clearing.id, direction: "debit", amountMinor: money.amountMinor, currency: payment.currency },
+            { accountId: escrow.id, direction: "credit", amountMinor: money.amountMinor, currency: payment.currency },
+          ],
+        });
       }
 
       await logAuditEvent({

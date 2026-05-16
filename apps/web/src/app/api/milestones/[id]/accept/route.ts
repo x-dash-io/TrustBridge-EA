@@ -1,17 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getMilestoneById, updateMilestoneStatus } from "@/lib/db/queries/milestones";
+import { getMilestoneById, transitionMilestoneStatus } from "@/lib/db/queries/milestones";
 import { getTransactionParties } from "@/lib/db/queries/transactions";
 import { logAuditEvent } from "@/lib/db/queries/audit";
 import { getUserById } from "@/lib/db/queries/users";
 import { initiateB2CRequest } from "@/lib/mpesa/b2c";
 import { createDisbursement } from "@/lib/db/queries/disbursements";
+import { assertRealMoneyEnabled } from "@/lib/compliance/limits";
+import { parseMoney } from "@/lib/money";
+import { getOrCreateLedgerAccount, postLedgerEntry } from "@/lib/db/queries/ledger";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const limited = await rateLimit(request, "strict", "milestone:accept");
+  if (limited) return limited;
+
+  try {
+    assertRealMoneyEnabled("Milestone release");
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Real money disabled" },
+      { status: 503 }
+    );
+  }
+
   const supabase = await createClient();
   
   // 1. Auth Check
@@ -40,10 +56,13 @@ export async function POST(
   }
 
   try {
-    // 4. Update Milestone Status to 'accepted'
-    await updateMilestoneStatus(id, "accepted", {
+    // 4. Atomically update Milestone Status to 'accepted'
+    const transitioned = await transitionMilestoneStatus(id, "delivered", "accepted", {
       acceptedAt: new Date(),
     });
+    if (!transitioned) {
+      return NextResponse.json({ error: "Milestone status changed; retry with latest state" }, { status: 409 });
+    }
 
     // 5. Fetch Seller Contact for Disbursement
     const seller = await getUserById(sellerParty!.userId!);
@@ -70,6 +89,34 @@ export async function POST(
       status: "pending",
       mpesaPhone: seller.phone,
       providerReference: b2cRes.ConversationID,
+    });
+
+    const money = parseMoney(milestone.amount, "KES");
+    const escrowAccount = await getOrCreateLedgerAccount({
+      transactionId: milestone.transactionId,
+      type: "escrow",
+      currency: "KES",
+      name: `Escrow ${milestone.transactionId}`,
+      isSystem: true,
+    });
+    const sellerPayable = await getOrCreateLedgerAccount({
+      ownerId: seller.id,
+      transactionId: milestone.transactionId,
+      type: "seller_payable",
+      currency: "KES",
+      name: `Seller payable ${seller.id}`,
+      isSystem: false,
+    });
+    await postLedgerEntry({
+      sourceType: "milestone_acceptance",
+      sourceId: id,
+      idempotencyKey: `milestone_acceptance:${id}`,
+      description: `Release milestone ${id}`,
+      createdBy: user.id,
+      postings: [
+        { accountId: escrowAccount.id, direction: "debit", amountMinor: money.amountMinor, currency: "KES" },
+        { accountId: sellerPayable.id, direction: "credit", amountMinor: money.amountMinor, currency: "KES" },
+      ],
     });
 
     // 8. Audit Log

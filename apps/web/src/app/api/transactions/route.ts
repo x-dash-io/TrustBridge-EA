@@ -6,6 +6,10 @@ import { logAuditEvent } from "@/lib/db/queries/audit";
 import { generateReference } from "@/lib/utils/reference";
 import { calcFee, calcFeeRate } from "@/lib/utils/currency";
 import { z } from "zod";
+import { getUserById } from "@/lib/db/queries/users";
+import { assertKycTierAllowsAmount } from "@/lib/compliance/limits";
+import { parseMoney, sumMoney } from "@/lib/money";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 const createTransactionSchema = z.object({
   assetClass: z.string().min(1),
@@ -34,6 +38,9 @@ const createTransactionSchema = z.object({
 
 export async function GET(request: Request) {
   try {
+    const limited = await rateLimit(request, "general", "transactions:get");
+    if (limited) return limited;
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1");
@@ -51,6 +58,10 @@ export async function GET(request: Request) {
     try {
       txs = await getTransactionsByUserId(user.id);
     } catch (dbError) {
+      if (process.env.NODE_ENV === "production" || process.env.ENABLE_DEMO_DATA !== "true") {
+        console.error("Transactions query failed:", dbError);
+        return NextResponse.json({ error: "Transactions unavailable" }, { status: 503 });
+      }
       console.warn("Database connection failed. Falling back to Institutional Mock Data.", dbError);
       const mockTxs = [
         { id: "mock-1", reference: "TX-9482-110", title: "Scale.ai Domain Acquisition", amount: "1250000", currency: "KES", status: "active", createdAt: new Date() },
@@ -99,6 +110,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, "strict", "transactions:post");
+    if (limited) return limited;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -117,11 +131,31 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
+    const dbUser = await getUserById(user.id);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User profile not found" }, { status: 403 });
+    }
+
+    let limitCheck;
+    try {
+      limitCheck = assertKycTierAllowsAmount(dbUser.kycTier, data.amount, data.currency);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "KYC tier limit exceeded" },
+        { status: 403 }
+      );
+    }
+
     const reference = generateReference();
     const milestoneCount = data.milestones.length;
-    const totalMilestoneAmount = data.milestones.reduce(
-      (sum, m) => sum + Number(m.amount), 0
-    );
+    const transactionMoney = parseMoney(data.amount, data.currency);
+    const totalMilestoneMoney = sumMoney(data.milestones.map((m) => parseMoney(m.amount, data.currency)));
+    if (totalMilestoneMoney.amountMinor !== transactionMoney.amountMinor) {
+      return NextResponse.json(
+        { error: "Milestone amounts must equal the transaction amount" },
+        { status: 400 }
+      );
+    }
 
     // FIX BUG-10: compute fees server-side — never trust client-supplied fee values.
     // calcFeeRate returns a percentage (e.g. 2.0 for 2%), calcFee returns the KES amount.
@@ -142,7 +176,7 @@ export async function POST(request: NextRequest) {
       inspectionPeriodDays: data.inspectionPeriodDays,
       milestoneCount,
       hasDataRoom: data.includeDataRoom,
-      status: "pending_funds",
+      status: limitCheck.requiresManualReview ? "requires_review" : "pending_funds",
       createdBy: user.id,
       feeAmount: feeAmount.toFixed(2),
       feePercentage: feeRate.toFixed(4),
@@ -157,8 +191,8 @@ export async function POST(request: NextRequest) {
     // Create milestones
     for (let i = 0; i < data.milestones.length; i++) {
       const m = data.milestones[i];
-      const percentage = totalMilestoneAmount > 0
-        ? ((Number(m.amount) / totalMilestoneAmount) * 100).toFixed(2)
+      const percentage = transactionMoney.amountMinor > BigInt(0)
+        ? ((Number(parseMoney(m.amount, data.currency).amountMinor) / Number(transactionMoney.amountMinor)) * 100).toFixed(2)
         : "0";
 
       await createMilestone({

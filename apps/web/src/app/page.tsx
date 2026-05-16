@@ -5,7 +5,7 @@ const features = [
   {
     icon: Shield,
     title: "Regulated Escrow",
-    description: "CBK-regulated trust accounts with institutional-grade security. Every transaction is audited and insured.",
+    description: "Segregated escrow controls with institutional-grade security. Every transaction is audited.",
   },
   {
     icon: Scale,
@@ -51,7 +51,7 @@ export default function LandingPage() {
         <div className="max-w-[1200px] mx-auto px-8 py-32 md:py-48">
           <div className="max-w-[800px]">
             <p className="kicker mb-6">
-              <span className="text-accent font-bold">CBK Regulated</span>
+              <span className="text-accent font-bold">Compliance Ready</span>
               {" / "}Multi-Asset Escrow
             </p>
             <h1 className="font-display text-[56px] md:text-[72px] font-bold leading-[0.95] tracking-tight mb-8">
@@ -60,7 +60,7 @@ export default function LandingPage() {
               <span className="italic text-accent">East African Commerce</span>
             </h1>
             <p className="text-[18px] text-muted max-w-[600px] leading-relaxed mb-12 font-sans">
-              Institutional-grade escrow for every asset class. M-Pesa native, CBK-regulated, 
+              Institutional-grade escrow for every asset class. M-Pesa native, compliance-focused, 
               and built for Kenya, Uganda, Tanzania, and Rwanda.
             </p>
             <div className="flex gap-4">

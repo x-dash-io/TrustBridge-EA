@@ -1,4 +1,10 @@
 import type { NotificationChannel } from "@/types";
+import { getUserById } from "@/lib/db/queries/users";
+import {
+  createNotification,
+  createNotificationDelivery,
+  updateNotificationDelivery,
+} from "@/lib/db/queries/notifications";
 
 export interface NotificationPayload {
   userId: string;
@@ -11,29 +17,79 @@ export interface NotificationPayload {
 }
 
 export async function dispatch(payload: NotificationPayload): Promise<void> {
-  const promises: Promise<unknown>[] = [];
+  const user = await getUserById(payload.userId);
+  if (!user) {
+    throw new Error("Notification recipient user not found");
+  }
+
+  const notification = payload.channels.includes("in_app")
+    ? await createNotification({
+        userId: payload.userId,
+        transactionId: payload.transactionId || null,
+        type: payload.type,
+        title: payload.title,
+        body: payload.body,
+        channels: payload.channels,
+      })
+    : null;
+
+  const failures: unknown[] = [];
 
   for (const channel of payload.channels) {
+    const recipient = resolveRecipient(channel, user);
+    const delivery = await createNotificationDelivery({
+      notificationId: notification?.id || null,
+      userId: payload.userId,
+      channel,
+      recipient,
+      status: channel === "in_app" ? "sent" : "pending",
+    });
+
+    if (channel !== "in_app" && !recipient) {
+      await updateNotificationDelivery(delivery.id, {
+        status: "failed",
+        error: `No ${channel} recipient configured for user`,
+      });
+      failures.push(new Error(`No ${channel} recipient configured for user`));
+      continue;
+    }
+
+    try {
     switch (channel) {
       case "sms":
-        promises.push(sendSms(payload));
+        await sendSms(recipient!, payload);
         break;
       case "whatsapp":
-        promises.push(sendWhatsApp(payload));
+        await sendWhatsApp(recipient!, payload);
         break;
       case "email":
-        promises.push(sendEmail(payload));
+        await sendEmail(recipient!, payload);
         break;
       case "in_app":
-        promises.push(saveInApp(payload));
         break;
+    }
+      await updateNotificationDelivery(delivery.id, { status: "sent" });
+    } catch (error) {
+      failures.push(error);
+      await updateNotificationDelivery(delivery.id, {
+        status: "failed",
+        error: error instanceof Error ? error.message : "Unknown notification failure",
+      });
     }
   }
 
-  await Promise.allSettled(promises);
+  if (failures.length > 0 && process.env.NODE_ENV === "production") {
+    throw new Error(`${failures.length} notification channel(s) failed`);
+  }
 }
 
-async function sendSms(payload: NotificationPayload): Promise<void> {
+function resolveRecipient(channel: NotificationChannel, user: { email: string | null; phone: string | null }) {
+  if (channel === "email") return user.email;
+  if (channel === "sms" || channel === "whatsapp") return user.phone;
+  return null;
+}
+
+async function sendSms(to: string, payload: NotificationPayload): Promise<void> {
   const apiKey = process.env.AT_API_KEY;
   const username = process.env.AT_USERNAME;
   if (!apiKey || !username) return;
@@ -47,19 +103,19 @@ async function sendSms(payload: NotificationPayload): Promise<void> {
     },
     body: new URLSearchParams({
       username,
-      to: payload.userId,
+      to,
       message: `${payload.title}: ${payload.body}`.slice(0, 160),
       from: process.env.AT_SENDER_ID || "TrustBridg",
     }),
   });
 }
 
-async function sendWhatsApp(payload: NotificationPayload): Promise<void> {
+async function sendWhatsApp(to: string, payload: NotificationPayload): Promise<void> {
   const { sendWhatsApp: wa } = await import("./whatsapp");
-  await wa({ to: payload.userId, body: `${payload.title}\n\n${payload.body}` });
+  await wa({ to, body: `${payload.title}\n\n${payload.body}` });
 }
 
-async function sendEmail(payload: NotificationPayload): Promise<void> {
+async function sendEmail(to: string, payload: NotificationPayload): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
   // Resend API integration
@@ -71,23 +127,9 @@ async function sendEmail(payload: NotificationPayload): Promise<void> {
     },
     body: JSON.stringify({
       from: "TrustBridge <notifications@trustbridge.co.ke>",
-      to: payload.userId,
+      to,
       subject: payload.title,
       text: payload.body,
     }),
-  });
-}
-
-async function saveInApp(payload: NotificationPayload): Promise<void> {
-  const { db } = await import("@/lib/db");
-  const { notifications } = await import("@/lib/db/schema");
-
-  await db.insert(notifications).values({
-    userId: payload.userId,
-    transactionId: payload.transactionId || null,
-    type: payload.type,
-    title: payload.title,
-    body: payload.body,
-    channels: payload.channels,
   });
 }

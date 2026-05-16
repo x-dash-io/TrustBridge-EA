@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getDisputesByUserId } from "@/lib/db/queries/disputes";
+import { rateLimit } from "@/lib/security/rate-limit";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const limited = await rateLimit(request, "general", "disputes:get");
+    if (limited) return limited;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -10,27 +15,16 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Mock data for resolution center
-    const disputes = [
-      {
-        id: "dsp-01",
-        transactionRef: "TX-9482-110",
-        title: "Non-delivery of Digital Asset: scale.ai",
-        status: "mediation",
-        severity: "high",
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: "dsp-02",
-        transactionRef: "TX-1102-552",
-        title: "Quality Dispute: Batch #412 Machinery",
-        status: "evidence-required",
-        severity: "medium",
-        updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      }
-    ];
+    const disputes = await getDisputesByUserId(user.id);
 
-    return NextResponse.json(disputes);
+    return NextResponse.json(disputes.map((d) => ({
+      id: d.id,
+      transactionId: d.transactionId,
+      milestoneId: d.milestoneId,
+      status: d.status,
+      resolutionTier: d.resolutionTier,
+      updatedAt: d.resolvedAt?.toISOString() || d.openedAt?.toISOString(),
+    })));
   } catch (error) {
     console.error("Disputes API Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

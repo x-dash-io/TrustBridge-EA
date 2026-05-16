@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getMilestoneById, updateMilestoneStatus } from "@/lib/db/queries/milestones";
+import { getMilestoneById, transitionMilestoneStatus } from "@/lib/db/queries/milestones";
 import { getTransactionParties } from "@/lib/db/queries/transactions";
 import { logAuditEvent } from "@/lib/db/queries/audit";
 import { db } from "@/lib/db";
 import { disputes } from "@/lib/db/schema";
 import { v4 as uuidv4 } from "uuid";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const limited = await rateLimit(request, "strict", "milestone:dispute");
+  if (limited) return limited;
+
   const supabase = await createClient();
   
   // 1. Auth Check
@@ -47,7 +51,14 @@ export async function POST(
     }).returning();
 
     // 5. Update Milestone Status to 'disputed'
-    await updateMilestoneStatus(id, "disputed");
+    const transitioned = await transitionMilestoneStatus(
+      id,
+      milestone.status || "pending",
+      "disputed"
+    );
+    if (!transitioned) {
+      return NextResponse.json({ error: "Milestone status changed; retry with latest state" }, { status: 409 });
+    }
 
     // 6. Audit Log
     await logAuditEvent({

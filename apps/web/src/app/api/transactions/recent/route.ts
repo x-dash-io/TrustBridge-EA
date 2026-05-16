@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTransactionsByUserId } from "@/lib/db/queries/transactions";
+import { rateLimit } from "@/lib/security/rate-limit";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const limited = await rateLimit(request, "general", "transactions:recent");
+    if (limited) return limited;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -15,6 +19,10 @@ export async function GET() {
     try {
       txs = await getTransactionsByUserId(user.id);
     } catch (dbError) {
+      if (process.env.NODE_ENV === "production" || process.env.ENABLE_DEMO_DATA !== "true") {
+        console.error("Recent transactions query failed:", dbError);
+        return NextResponse.json({ error: "Transactions unavailable" }, { status: 503 });
+      }
       console.warn("Database connection failed. Falling back to Institutional Mock Data.", dbError);
       // Fallback for demonstration if DB is not configured
       txs = [

@@ -2,9 +2,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { smileId } from "@/lib/kyc/smile-identity";
 import { v4 as uuidv4 } from "uuid";
+import { assertSmileIdConfigured } from "@/lib/compliance/limits";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, "strict", "kyc:smartselfie:init");
+    if (limited) return limited;
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -14,6 +19,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { product } = body;
+    assertSmileIdConfigured();
 
     if (!product) {
       return NextResponse.json({ error: "Product type is required" }, { status: 400 });
@@ -52,8 +58,11 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : "SmartSelfie init failed";
     console.error("SmartSelfie Init Error:", message);
 
-    // Return mock token for development when env vars are not set
-    if (!process.env.SMILE_ID_PARTNER_ID || !process.env.SMILE_ID_API_KEY) {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      process.env.ENABLE_DEMO_DATA === "true" &&
+      (!process.env.SMILE_ID_PARTNER_ID || !process.env.SMILE_ID_API_KEY)
+    ) {
       return NextResponse.json({
         token: "mock-token-for-development",
         jobId: `job-mock-${Date.now()}`,

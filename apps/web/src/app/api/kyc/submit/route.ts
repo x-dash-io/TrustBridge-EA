@@ -3,9 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createKycSubmission } from "@/lib/db/queries/kyc";
 import { smileId } from "@/lib/kyc/smile-identity";
 import { v4 as uuidv4 } from "uuid";
+import { assertSmileIdConfigured } from "@/lib/compliance/limits";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = await rateLimit(request, "strict", "kyc:submit");
+    if (limited) return limited;
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -14,6 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    assertSmileIdConfigured();
     const { 
       tier, 
       idType, 

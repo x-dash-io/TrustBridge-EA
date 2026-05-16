@@ -13,6 +13,16 @@ const protectedPaths = [
   "/agents",
 ];
 
+const publicApiPathPrefixes = [
+  "/api/webhooks/",
+  "/api/fx-rates",
+];
+
+const cronApiPaths = [
+  "/api/fx-rates/cron",
+  "/api/inspections/cron",
+];
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -50,9 +60,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+  const isApi = pathname.startsWith("/api/");
+  const isPublicApi = publicApiPathPrefixes.some((route) => pathname.startsWith(route));
+  const isCronApi = cronApiPaths.includes(pathname);
   const isProtected = protectedPaths.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
-  );
+  ) || (isApi && !isPublicApi && !isCronApi);
 
   if (isProtected && !user) {
     const loginUrl = new URL("/login", request.url);
@@ -64,5 +77,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

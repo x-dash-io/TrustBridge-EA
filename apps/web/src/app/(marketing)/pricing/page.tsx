@@ -56,7 +56,7 @@ export default function PricingPage() {
           Transparent Fee Structure
         </h1>
         <p className="text-[16px] text-muted max-w-[600px] font-sans leading-relaxed">
-          Volume-based pricing with no hidden fees. All funds held in CBK-regulated trust accounts.
+          Volume-based pricing with no hidden fees. Funds are designed for segregated escrow accounts subject to licensing.
           Fees are deducted from the funding amount upon transaction creation.
         </p>
       </div>

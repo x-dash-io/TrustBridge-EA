@@ -1,15 +1,32 @@
 import { db } from "@/lib/db";
 import { kycSubmissions, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { encryptDocumentNumber } from "@/lib/security/pii";
 
 type NewKycSubmission = typeof kycSubmissions.$inferInsert;
+type DbKycStatus = typeof kycSubmissions.$inferSelect.status;
 
 export async function createKycSubmission(data: NewKycSubmission) {
-  const result = await db.insert(kycSubmissions).values(data).returning();
+  const encrypted = data.documentNumber
+    ? encryptDocumentNumber(data.documentNumber)
+    : null;
+
+  const result = await db
+    .insert(kycSubmissions)
+    .values({
+      ...data,
+      documentNumber: null,
+      documentNumberCiphertext: encrypted?.ciphertext ?? null,
+      documentNumberIv: encrypted?.iv ?? null,
+      documentNumberAuthTag: encrypted?.authTag ?? null,
+      documentNumberKeyVersion: encrypted?.keyVersion ?? null,
+      documentNumberBlindIndex: encrypted?.blindIndex ?? null,
+    })
+    .returning();
   return result[0];
 }
 
-export async function updateKycStatus(submissionId: string, status: string, rejectionReason?: string) {
+export async function updateKycStatus(submissionId: string, status: DbKycStatus, rejectionReason?: string) {
   const result = await db
     .update(kycSubmissions)
     .set({ status, rejectionReason, reviewedAt: new Date() })

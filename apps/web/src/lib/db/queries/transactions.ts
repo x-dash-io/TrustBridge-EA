@@ -6,6 +6,9 @@ import {
   type NewTransactionParty,
 } from "@/lib/db/schema";
 import { eq, and, or, desc, inArray } from "drizzle-orm";
+import { assertTransactionTransition } from "@/lib/state/transactions";
+
+type DbTransactionStatus = typeof transactions.$inferSelect.status;
 
 export async function getTransactionById(id: string) {
   const result = await db
@@ -71,12 +74,31 @@ export async function createTransaction(data: NewTransaction) {
 
 export async function updateTransactionStatus(
   id: string,
-  status: string
+  status: DbTransactionStatus
 ) {
+  const current = await getTransactionById(id);
+  if (!current) return null;
+  assertTransactionTransition(current.status, status);
+
   const result = await db
     .update(transactions)
     .set({ status, updatedAt: new Date() })
-    .where(eq(transactions.id, id))
+    .where(and(eq(transactions.id, id), eq(transactions.status, current.status)))
+    .returning();
+
+  return result[0] || null;
+}
+
+export async function transitionTransactionStatus(
+  id: string,
+  expectedStatus: typeof transactions.$inferSelect.status,
+  nextStatus: typeof transactions.$inferSelect.status
+) {
+  assertTransactionTransition(expectedStatus, nextStatus);
+  const result = await db
+    .update(transactions)
+    .set({ status: nextStatus, updatedAt: new Date() })
+    .where(and(eq(transactions.id, id), eq(transactions.status, expectedStatus)))
     .returning();
 
   return result[0] || null;

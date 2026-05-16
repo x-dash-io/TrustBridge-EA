@@ -8,9 +8,96 @@ import {
   timestamp,
   date,
   jsonb,
+  bigint,
+  pgEnum,
+  index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
+
+export const transactionStatusEnum = pgEnum("transaction_status", [
+  "draft",
+  "pending_funds",
+  "funded",
+  "in_progress",
+  "in_inspection",
+  "completed",
+  "disputed",
+  "cancelled",
+  "requires_review",
+]);
+
+export const milestoneStatusEnum = pgEnum("milestone_status", [
+  "pending",
+  "delivered",
+  "accepted",
+  "released",
+  "disputed",
+  "cancelled",
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "completed",
+  "failed",
+  "cancelled",
+  "reversed",
+]);
+
+export const disbursementStatusEnum = pgEnum("disbursement_status", [
+  "pending",
+  "completed",
+  "failed",
+  "cancelled",
+  "reversed",
+]);
+
+export const kycStatusEnum = pgEnum("kyc_status", [
+  "pending",
+  "verified",
+  "rejected",
+  "requires_review",
+]);
+
+export const disputeStatusEnum = pgEnum("dispute_status", [
+  "open",
+  "mediation",
+  "evidence_required",
+  "resolved",
+  "closed",
+]);
+
+export const partyStatusEnum = pgEnum("party_status", [
+  "invited",
+  "signed",
+  "declined",
+  "removed",
+]);
+
+export const ledgerAccountTypeEnum = pgEnum("ledger_account_type", [
+  "user",
+  "escrow",
+  "platform_fee",
+  "provider_clearing",
+  "seller_payable",
+  "refund_payable",
+]);
+
+export const ledgerEntryStatusEnum = pgEnum("ledger_entry_status", [
+  "posted",
+  "reversed",
+]);
+
+export const ledgerPostingDirectionEnum = pgEnum("ledger_posting_direction", [
+  "debit",
+  "credit",
+]);
+
+export const notificationDeliveryStatusEnum = pgEnum("notification_delivery_status", [
+  "pending",
+  "sent",
+  "failed",
+]);
 
 // ─── USERS ──────────────────────────────────────────────────────────────────
 
@@ -20,7 +107,7 @@ export const users = pgTable("users", {
   phone: text("phone").unique(),
   fullName: text("full_name").notNull(),
   kycTier: integer("kyc_tier").default(0),
-  kycStatus: text("kyc_status").default("pending"),
+  kycStatus: kycStatusEnum("kyc_status").default("pending"),
   role: text("role").default("individual"),
   preferredCurrency: text("preferred_currency").default("KES"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -70,7 +157,7 @@ export const businesses = pgTable("businesses", {
   registrationNumber: text("registration_number"),
   kraPin: text("kra_pin"),
   country: text("country").notNull().default("KE"),
-  kycStatus: text("kyc_status").default("pending"),
+  kycStatus: kycStatusEnum("kyc_status").default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -85,7 +172,7 @@ export const transactions = pgTable("transactions", {
   title: text("title").notNull(),
   assetClass: text("asset_class").notNull(),
   assetSubclass: text("asset_subclass"),
-  status: text("status").notNull().default("draft"),
+  status: transactionStatusEnum("status").notNull().default("draft"),
   currency: text("currency").notNull().default("KES"),
   amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
   feeAmount: numeric("fee_amount", { precision: 18, scale: 2 }),
@@ -115,7 +202,7 @@ export const transactionParties = pgTable("transaction_parties", {
   inviteName: text("invite_name"),
   inviteEmail: text("invite_email"),
   invitePhone: text("invite_phone"),
-  status: text("status").default("invited"),
+  status: partyStatusEnum("status").default("invited"),
   signedAt: timestamp("signed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
@@ -133,11 +220,14 @@ export const milestones = pgTable("milestones", {
   description: text("description"),
   amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
   percentage: numeric("percentage", { precision: 5, scale: 2 }),
-  status: text("status").default("pending"),
+  status: milestoneStatusEnum("status").default("pending"),
   dueDate: date("due_date"),
   deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   releasedAt: timestamp("released_at", { withTimezone: true }),
+  inspectionStartedAt: timestamp("inspection_started_at", { withTimezone: true }),
+  inspectionExpiresAt: timestamp("inspection_expires_at", { withTimezone: true }),
+  autoReleaseEligibleAt: timestamp("auto_release_eligible_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -154,7 +244,7 @@ export const payments = pgTable("payments", {
   amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
   currency: text("currency").notNull(),
   method: text("method").notNull(),
-  status: text("status").default("pending"),
+  status: paymentStatusEnum("status").default("pending"),
   providerReference: text("provider_reference"),
   mpesaPhone: text("mpesa_phone"),
   checkoutRequestId: text("checkout_request_id"),
@@ -176,7 +266,7 @@ export const disbursements = pgTable("disbursements", {
   amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
   currency: text("currency").notNull(),
   method: text("method").notNull(),
-  status: text("status").default("pending"),
+  status: disbursementStatusEnum("status").default("pending"),
   providerReference: text("provider_reference"),
   mpesaPhone: text("mpesa_phone"),
   bankAccount: jsonb("bank_account"),
@@ -196,8 +286,13 @@ export const kycSubmissions = pgTable("kyc_submissions", {
   smileJobId: text("smile_job_id"),
   documentType: text("document_type"),
   documentNumber: text("document_number"),
+  documentNumberCiphertext: text("document_number_ciphertext"),
+  documentNumberIv: text("document_number_iv"),
+  documentNumberAuthTag: text("document_number_auth_tag"),
+  documentNumberKeyVersion: text("document_number_key_version"),
+  documentNumberBlindIndex: text("document_number_blind_index"),
   country: text("country"),
-  status: text("status").default("pending"),
+  status: kycStatusEnum("status").default("pending"),
   rejectionReason: text("rejection_reason"),
   submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow(),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
@@ -214,7 +309,7 @@ export const disputes = pgTable("disputes", {
   transactionId: uuid("transaction_id").references(() => transactions.id),
   milestoneId: uuid("milestone_id").references(() => milestones.id),
   openedBy: uuid("opened_by").references(() => users.id),
-  status: text("status").default("open"),
+  status: disputeStatusEnum("status").default("open"),
   resolutionTier: integer("resolution_tier").default(1),
   assignedMediatorId: uuid("assigned_mediator_id").references(() => users.id),
   resolution: text("resolution"),
@@ -388,6 +483,93 @@ export const notifications = pgTable("notifications", {
 
 export type Notification = InferSelectModel<typeof notifications>;
 export type NewNotification = InferInsertModel<typeof notifications>;
+
+export const notificationDeliveries = pgTable(
+  "notification_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    notificationId: uuid("notification_id").references(() => notifications.id),
+    userId: uuid("user_id").references(() => users.id).notNull(),
+    channel: text("channel").notNull(),
+    recipient: text("recipient"),
+    status: notificationDeliveryStatusEnum("status").notNull().default("pending"),
+    providerReference: text("provider_reference"),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("notification_deliveries_user_idx").on(table.userId),
+    index("notification_deliveries_notification_idx").on(table.notificationId),
+  ]
+);
+
+export type NotificationDelivery = InferSelectModel<typeof notificationDeliveries>;
+export type NewNotificationDelivery = InferInsertModel<typeof notificationDeliveries>;
+
+export const ledgerAccounts = pgTable(
+  "ledger_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id").references(() => users.id),
+    transactionId: uuid("transaction_id").references(() => transactions.id),
+    type: ledgerAccountTypeEnum("type").notNull(),
+    currency: text("currency").notNull().default("KES"),
+    name: text("name").notNull(),
+    isSystem: boolean("is_system").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("ledger_accounts_owner_idx").on(table.ownerId),
+    index("ledger_accounts_transaction_idx").on(table.transactionId),
+    index("ledger_accounts_type_currency_idx").on(table.type, table.currency),
+  ]
+);
+
+export type LedgerAccount = InferSelectModel<typeof ledgerAccounts>;
+export type NewLedgerAccount = InferInsertModel<typeof ledgerAccounts>;
+
+export const ledgerEntries = pgTable(
+  "ledger_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceType: text("source_type").notNull(),
+    sourceId: text("source_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    status: ledgerEntryStatusEnum("status").notNull().default("posted"),
+    description: text("description"),
+    metadata: jsonb("metadata"),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ledger_entries_idempotency_key_idx").on(table.idempotencyKey),
+    index("ledger_entries_source_idx").on(table.sourceType, table.sourceId),
+  ]
+);
+
+export type LedgerEntry = InferSelectModel<typeof ledgerEntries>;
+export type NewLedgerEntry = InferInsertModel<typeof ledgerEntries>;
+
+export const ledgerPostings = pgTable(
+  "ledger_postings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entryId: uuid("entry_id").references(() => ledgerEntries.id).notNull(),
+    accountId: uuid("account_id").references(() => ledgerAccounts.id).notNull(),
+    direction: ledgerPostingDirectionEnum("direction").notNull(),
+    amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
+    currency: text("currency").notNull().default("KES"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("ledger_postings_entry_idx").on(table.entryId),
+    index("ledger_postings_account_idx").on(table.accountId),
+  ]
+);
+
+export type LedgerPosting = InferSelectModel<typeof ledgerPostings>;
+export type NewLedgerPosting = InferInsertModel<typeof ledgerPostings>;
 
 // ─── FX RATES ───────────────────────────────────────────────────────────────
 

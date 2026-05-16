@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { disputes, disputeMessages, disputeEvidence, type NewDispute, type NewDisputeMessage, type NewDisputeEvidence } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray, or } from "drizzle-orm";
+import { transactionParties } from "@/lib/db/schema";
 
 export async function getDisputeById(id: string) {
   const result = await db
@@ -13,10 +14,15 @@ export async function getDisputeById(id: string) {
 }
 
 export async function getDisputesByUserId(userId: string) {
+  const partyTxIds = db
+    .select({ transactionId: transactionParties.transactionId })
+    .from(transactionParties)
+    .where(eq(transactionParties.userId, userId));
+
   return db
     .select()
     .from(disputes)
-    .where(eq(disputes.openedBy, userId))
+    .where(or(eq(disputes.openedBy, userId), inArray(disputes.transactionId, partyTxIds)))
     .orderBy(desc(disputes.openedAt));
 }
 
